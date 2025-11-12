@@ -1,8 +1,3 @@
-/**
- * Coordinate transformation utilities
- * Handles conversion between NHL API coordinates and SVG rendering space
- */
-
 import { NHL_COORDS, RINK_DIMENSIONS } from "../constants";
 import type { NHLCoordinate, SVGCoordinate, RenderDimensions } from "../types";
 

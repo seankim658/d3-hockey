@@ -409,9 +409,14 @@
   .<span class="function">render</span>()
   .<span class="function">addEvents</span>(events, {
     id: <span class="string">'events'</span>,
-    <span class="comment">// Symbol is automatically determined by event type</span>
-    color: (d) => d.type === <span class="string">'goal'</span> ? <span class="string">'#00ff00'</span> : 
-                  d.type === <span class="string">'blocked'</span> ? <span class="string">'#ff6600'</span> : <span class="string">'#0088ff'</span>,
+    <span class="comment">// Use colorByCategory - clean and declarative</span>
+    color: <span class="function">colorByCategory</span>(<span class="string">'type'</span>, {
+      colors: {
+        goal: <span class="string">'#00ff00'</span>,
+        shot: <span class="string">'#0088ff'</span>,
+        blocked: <span class="string">'#ff6600'</span>
+      }
+    }),
     symbolSize: <span class="number">100</span>
   });</code></pre>
               </div>
@@ -447,7 +452,7 @@
   .<span class="function">addEvents</span>(shotsWithDanger, {
     id: <span class="string">'xg-shots'</span>,
     color: <span class="string">'#c8102e'</span>,
-    radius: (d) => <span class="number">3</span> + (d.xG * <span class="number">20</span>), <span class="comment">// Scale by xG</span>
+    radius: <span class="function">scaleRadiusByProperty</span>(<span class="string">'xG'</span>, { min: <span class="number">3</span>, max: <span class="number">23</span>, domain: [<span class="number">0</span>, <span class="number">1</span>] }),
     opacity: <span class="number">0.7</span>
   });</code></pre>
               </div>
@@ -469,10 +474,7 @@
                 <span class="code-toggle-label">View Code</span>
               </div>
               <div class="code-content">
-                <pre><code><span class="keyword">import</span> * <span class="keyword">as</span> d3 <span class="keyword">from</span> <span class="string">'d3'</span>;
-
-<span class="keyword">const</span> colorScale = d3.<span class="function">scaleSequential</span>(d3.interpolateYlOrRd)
-  .<span class="function">domain</span>([<span class="number">0</span>, <span class="number">0.4</span>]);
+                <pre><code><span class="keyword">import</span> { Rink, colorByProperty } <span class="keyword">from</span> <span class="string">'d3-hockey'</span>;
 
 <span class="keyword">const</span> shots = [
   { coordinates: { x: <span class="number">85</span>, y: <span class="number">3</span> }, xG: <span class="number">0.32</span>, player: <span class="string">'Pastrnak'</span> },
@@ -487,7 +489,11 @@
   .<span class="function">render</span>()
   .<span class="function">addEvents</span>(shots, {
     id: <span class="string">'heat-shots'</span>,
-    color: (d) => <span class="function">colorScale</span>(d.xG),
+    <span class="comment">// Built-in shotQuality scale (yellow to red)</span>
+    color: <span class="function">colorByProperty</span>(<span class="string">'xG'</span>, { 
+      scale: <span class="string">'shotQuality'</span>, 
+      domain: [<span class="number">0</span>, <span class="number">0.4</span>] 
+    }),
     radius: <span class="number">6</span>,
     stroke: <span class="string">'#fff'</span>,
     strokeWidth: <span class="number">1.5</span>
@@ -534,7 +540,12 @@
   .<span class="function">render</span>()
   .<span class="function">addEvents</span>(detailedShots, {
     id: <span class="string">'detailed-shots'</span>,
-    color: (d) => d.result === <span class="string">'Goal'</span> ? <span class="string">'#00ff00'</span> : <span class="string">'#0088ff'</span>,
+    color: <span class="function">colorByCategory</span>(<span class="string">'result'</span>, {
+      colors: {
+        Goal: <span class="string">'#00ff00'</span>,
+        Save: <span class="string">'#0088ff'</span>
+      }
+    }),
     radius: <span class="number">5</span>,
     tooltip: (d) => <span class="string">`
       &lt;strong&gt;${d.player}&lt;/strong&gt;&lt;br/&gt;
@@ -690,7 +701,13 @@ rink.<span class="function">addEvents</span>(awayShots, {
     </div>
 
     <script type="module">
-      import { Rink } from "../../src/index.ts";
+      import {
+        Rink,
+        scaleRadiusByProperty,
+        colorByProperty,
+        colorByCategory,
+        scaleOpacityByProperty,
+      } from "../../src/index.ts";
       import * as d3 from "d3";
 
       // Simple Rink
@@ -740,12 +757,13 @@ rink.<span class="function">addEvents</span>(awayShots, {
         .render()
         .addEvents(symbolEvents, {
           id: "events",
-          color: (d) =>
-            d.type === "goal"
-              ? "#00ff00"
-              : d.type === "blocked"
-                ? "#ff6600"
-                : "#0088ff",
+          color: colorByCategory("type", {
+            colors: {
+              goal: "#00ff00",
+              shot: "#0088ff",
+              blocked: "#ff6600",
+            },
+          }),
           symbolSize: 100,
         });
 
@@ -763,15 +781,15 @@ rink.<span class="function">addEvents</span>(awayShots, {
         .addEvents(shotsWithDanger, {
           id: "xg-shots",
           color: "#c8102e",
-          radius: (d) => 3 + d.xG * 20,
+          radius: scaleRadiusByProperty("xG", {
+            min: 3,
+            max: 23,
+            domain: [0, 1],
+          }),
           opacity: 0.7,
         });
 
       // Color by Data
-      const colorScale = d3
-        .scaleSequential(d3.interpolateYlOrRd)
-        .domain([0, 0.4]);
-
       const heatShots = [
         { coordinates: { x: 85, y: 3 }, xG: 0.32, player: "Pastrnak" },
         { coordinates: { x: 75, y: -12 }, xG: 0.15, player: "Marchand" },
@@ -784,7 +802,10 @@ rink.<span class="function">addEvents</span>(awayShots, {
         .render()
         .addEvents(heatShots, {
           id: "heat-shots",
-          color: (d) => colorScale(d.xG),
+          color: colorByProperty("xG", {
+            scale: "shotQuality",
+            domain: [0, 0.4],
+          }),
           radius: 6,
           stroke: "#fff",
           strokeWidth: 1.5,
@@ -813,7 +834,12 @@ rink.<span class="function">addEvents</span>(awayShots, {
         .render()
         .addEvents(detailedShots, {
           id: "detailed-shots",
-          color: (d) => (d.result === "Goal" ? "#00ff00" : "#0088ff"),
+          color: colorByCategory("result", {
+            colors: {
+              Goal: "#00ff00",
+              Save: "#0088ff",
+            },
+          }),
           radius: 5,
           tooltip: (d) => `
             <strong>${d.player}</strong><br/>

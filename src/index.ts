@@ -89,7 +89,24 @@ export {
   createColorScale,
   getShotResultColor,
   getOpacity,
+  colorByProperty,
+  colorByTeam,
+  colorByCategory,
+  colorGradient,
+  colorByCondition,
 } from "./utils/color-utils";
+
+export {
+  scaleRadiusByProperty,
+  scaleOpacityByProperty,
+  scaleByProperty,
+  scaleSqrtByProperty,
+  scaleLogByProperty,
+  scaleByThresholds,
+  type ScaleOptions,
+  type RadiusScaleOptions,
+  type OpacityScaleOptions,
+} from "./utils/scale-utils";
 
 export { Rink } from "./components/rink";
 

@@ -1,7 +1,3 @@
-/**
- * Data processing utilities for hockey analytics
- */
-
 import type { HockeyEvent } from "../types";
 import { parseNHLAPIEvents, extractNHLAPIEvents } from "./nhl-api-events";
 import type { NHLAPIPlayByPlayResponse } from "./nhl-api-events";
