@@ -28,7 +28,13 @@ export interface PeriodInfo {
 }
 
 /**
+ * Accessor function type
+ */
+export type Accessor<TData, TReturn> = (d: TData, i: number) => TReturn;
+
+/**
  * Shot or event data point
+ * Not required, users can pass any data structure with custom accessors
  */
 export interface HockeyEvent {
   coordinates: NHLCoordinate;

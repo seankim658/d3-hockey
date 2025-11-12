@@ -1,3 +1,5 @@
+/* eslint-disable  @typescript-eslint/no-explicit-any */
+
 /**
  * Event layer for rendering hockey events (shots, hits, faceoffs, etc.)
  */
@@ -5,7 +7,7 @@
 import * as d3 from "d3";
 import { BaseLayer, BaseLayerConfig } from "./base-layer";
 import type {
-  HockeyEvent,
+  Accessor,
   RenderDimensions,
   HockeyEventSymbolType,
   AnimationEasing,
@@ -15,16 +17,21 @@ import { SYMBOL_PATHS } from "../../constants";
 /**
  * Configuration for event layer rendering
  */
-export interface EventLayerConfig extends BaseLayerConfig {
+export interface EventLayerConfig<TData = any> extends BaseLayerConfig {
+  // Data accessors
+  x?: Accessor<TData, number>;
+  y?: Accessor<TData, number>;
+  eventType?: Accessor<TData, string | null>;
+
   // Visual properties
-  radius?: number | ((d: HockeyEvent) => number);
-  color?: string | ((d: HockeyEvent) => string);
-  stroke?: string | ((d: HockeyEvent) => string);
+  radius?: number | Accessor<TData, number>;
+  color?: string | Accessor<TData, string>;
+  stroke?: string | Accessor<TData, string>;
   strokeWidth?: number;
 
   // Tooltip configuration
   showTooltip?: boolean;
-  tooltip?: (d: HockeyEvent) => string;
+  tooltip?: Accessor<TData, string>;
 
   // Animation control
   animate?: boolean;
@@ -32,16 +39,16 @@ export interface EventLayerConfig extends BaseLayerConfig {
   animationEasing?: AnimationEasing;
 
   // Symbol configuration
-  symbol?: HockeyEventSymbolType | ((d: HockeyEvent) => HockeyEventSymbolType);
-  symbolSize?: number | ((d: HockeyEvent) => number);
+  symbol?: HockeyEventSymbolType | Accessor<TData, HockeyEventSymbolType>;
+  symbolSize?: number | Accessor<TData, number>;
 
   // Advanced customization
   customRender?: (
-    selection: d3.Selection<SVGElement, HockeyEvent, SVGGElement, unknown>,
+    selection: d3.Selection<SVGElement, TData, SVGGElement, unknown>,
     dimensions: RenderDimensions,
   ) => void;
   customAttributes?: {
-    [key: string]: string | number | ((d: HockeyEvent) => string | number);
+    [key: string]: string | number | Accessor<TData, string | number>;
   };
 
   // Legend configuration
@@ -53,7 +60,10 @@ export interface EventLayerConfig extends BaseLayerConfig {
 /**
  * Event layer class for rendering hockey events on the rink
  */
-export class EventLayer extends BaseLayer<HockeyEvent, EventLayerConfig> {
+export class EventLayer<TData = any> extends BaseLayer<
+  TData,
+  EventLayerConfig<TData>
+> {
   private static sharedTooltip: d3.Selection<
     HTMLDivElement,
     unknown,
@@ -61,14 +71,14 @@ export class EventLayer extends BaseLayer<HockeyEvent, EventLayerConfig> {
     unknown
   > | null = null;
 
-  constructor(data: HockeyEvent[], config: EventLayerConfig) {
+  constructor(data: TData[], config: EventLayerConfig<TData>) {
     super(data, config);
   }
 
   /**
    * Get default configuration for event layer
    */
-  protected getDefaults(): Required<EventLayerConfig> {
+  protected getDefaults(): Required<EventLayerConfig<TData>> {
     return {
       // Base layer defaults
       id: "event-layer",
@@ -76,20 +86,23 @@ export class EventLayer extends BaseLayer<HockeyEvent, EventLayerConfig> {
       opacity: 1,
       className: "event-layer",
       zIndex: 0,
+      x: EventLayer.defaultXAccessor,
+      y: EventLayer.defaultYAccessor,
+      eventType: EventLayer.defaultEventTypeAccessor,
       // Event layer defaults
       radius: 4,
       color: "#c8102e",
       stroke: "#000000",
       strokeWidth: 1,
       showTooltip: true,
-      tooltip: this.defaultTooltip,
+      tooltip: (d: TData) => this.defaultTooltip(d),
       animate: true,
       animationDuration: 300,
       animationEasing: "easeCubicInOut",
       symbol: "auto",
       symbolSize: 64,
       customRender: (() => {}) as (
-        selection: d3.Selection<SVGElement, HockeyEvent, SVGGElement, unknown>,
+        selection: d3.Selection<SVGElement, TData, SVGGElement, unknown>,
         dimensions: RenderDimensions,
       ) => void,
       customAttributes: {},
@@ -102,16 +115,61 @@ export class EventLayer extends BaseLayer<HockeyEvent, EventLayerConfig> {
   /**
    * Default tooltip formatter
    */
-  private defaultTooltip(d: HockeyEvent): string {
+  private defaultTooltip = (d: TData): string => {
+    const x = this.getX(d);
+    const y = this.getY(d);
+    const eventType = this.getEventType(d);
+
     const parts: string[] = [];
-    if (d.player) parts.push(`Player: ${d.player}`);
-    if (d.team) parts.push(`Team: ${d.team}`);
-    if (d.type) parts.push(`Type: ${d.type}`);
-    if (d.period) parts.push(`Period: ${d.period}`);
-    parts.push(
-      `Location: (${d.coordinates.x.toFixed(1)}, ${d.coordinates.y.toFixed(1)})`,
-    );
+    if (eventType) parts.push(`Event: ${eventType}`);
+    parts.push(`Location: (${x.toFixed(1)}, ${y.toFixed(1)})`);
     return parts.join("<br/>");
+  };
+
+  private static defaultXAccessor<T>(d: T): number {
+    if (d && typeof d === "object") {
+      const obj = d as any;
+      if ("details" in obj && obj.details?.xCoord != null)
+        return obj.details.xCoord;
+      if ("x" in obj && obj.x != null) return obj.x;
+      if ("coordinates" in obj && obj.coordinates?.x != null)
+        return obj.coordinates.x;
+    }
+    throw new Error("Cannot extract x coordinate");
+  }
+
+  private static defaultYAccessor<T>(d: T): number {
+    if (d && typeof d === "object") {
+      const obj = d as any;
+      if ("details" in obj && obj.details?.yCoord != null)
+        return obj.details.yCoord;
+      if ("y" in obj && obj.y != null) return obj.y;
+      if ("coordinates" in obj && obj.coordinates?.y != null)
+        return obj.coordinates.y;
+    }
+    throw new Error("Cannot extract y coordinate");
+  }
+
+  private static defaultEventTypeAccessor<T>(d: T): string | null {
+    if (!d || typeof d !== "object") return null;
+    const obj = d as any;
+    if (obj.typeDescKey) return obj.typeDescKey;
+    if (obj.type) return obj.type;
+    if (obj.eventType) return obj.eventType;
+    if (obj.event) return obj.event;
+    return null;
+  }
+
+  private getX(d: TData, i: number = 0): number {
+    return this.config.x!(d, i);
+  }
+
+  private getY(d: TData, i: number = 0): number {
+    return this.config.y!(d, i);
+  }
+
+  private getEventType(d: TData, i: number = 0): string | null {
+    return this.config.eventType!(d, i);
   }
 
   /**
@@ -158,13 +216,15 @@ export class EventLayer extends BaseLayer<HockeyEvent, EventLayerConfig> {
       throw new Error("Layer not initialized. Call initialize() first.");
     }
 
-    // Filter out events with invalid coordinates
-    const validEvents = this.data.filter(
-      (d) =>
-        d.coordinates &&
-        typeof d.coordinates.x === "number" &&
-        typeof d.coordinates.y === "number",
-    );
+    const validEvents = this.data.filter((d, i) => {
+      try {
+        this.getX(d, i);
+        this.getY(d, i);
+        return true;
+      } catch {
+        return false;
+      }
+    });
 
     this.renderSymbols(validEvents);
   }
@@ -172,23 +232,26 @@ export class EventLayer extends BaseLayer<HockeyEvent, EventLayerConfig> {
   /**
    * Generic symbol rendering
    */
-  private renderSymbols(validEvents: HockeyEvent[]): void {
+  private renderSymbols(validEvents: TData[]): void {
     if (!this.group) return;
 
     const symbols = this.group
-      .selectAll<SVGPathElement, HockeyEvent>("path.event-symbol")
-      .data(validEvents, (d: HockeyEvent, i: number) =>
-        String(d.id ?? `event-${i}`),
-      );
+      .selectAll<SVGPathElement, TData>("path.event-symbol")
+      .data(validEvents, (d: TData, i: number) => {
+        const obj = d as any;
+        return String(obj.id ?? obj.eventId ?? `event-${i}`);
+      });
 
     const enter = symbols
       .enter()
       .append("path")
       .attr("class", "event-symbol")
       .attr("d", (d) => this.getSymbolPath(d))
-      .attr("transform", (d) => {
-        const pos = this.nhlToSVG(d.coordinates);
-        return `translate(${pos.x},${pos.y}) scale(0)`; // Start scaled to 0 for animation
+      .attr("transform", (d, i) => {
+        const x = this.getX(d, i);
+        const y = this.getY(d, i);
+        const pos = this.nhlToSVG({ x, y });
+        return `translate(${pos.x},${pos.y}) scale(0)`;
       })
       .attr("fill", this.getColor.bind(this))
       .attr("stroke", this.getStroke.bind(this))
@@ -203,13 +266,17 @@ export class EventLayer extends BaseLayer<HockeyEvent, EventLayerConfig> {
         .transition()
         .duration(this.config.animationDuration)
         .ease(this.getEasing())
-        .attr("transform", (d) => {
-          const pos = this.nhlToSVG(d.coordinates);
+        .attr("transform", (d, i) => {
+          const x = this.getX(d, i);
+          const y = this.getY(d, i);
+          const pos = this.nhlToSVG({ x, y });
           return `translate(${pos.x},${pos.y}) scale(1)`;
         });
     } else {
-      enter.attr("transform", (d) => {
-        const pos = this.nhlToSVG(d.coordinates);
+      enter.attr("transform", (d, i) => {
+        const x = this.getX(d, i);
+        const y = this.getY(d, i);
+        const pos = this.nhlToSVG({ x, y });
         return `translate(${pos.x},${pos.y}) scale(1)`;
       });
     }
@@ -221,18 +288,22 @@ export class EventLayer extends BaseLayer<HockeyEvent, EventLayerConfig> {
         .transition()
         .duration(this.config.animationDuration)
         .ease(this.getEasing())
-        .attr("d", (d) => this.getSymbolPath(d))
-        .attr("transform", (d) => {
-          const pos = this.nhlToSVG(d.coordinates);
+        .attr("d", (d, i) => this.getSymbolPath(d, i))
+        .attr("transform", (d, i) => {
+          const x = this.getX(d, i);
+          const y = this.getY(d, i);
+          const pos = this.nhlToSVG({ x, y });
           return `translate(${pos.x},${pos.y}) scale(1)`;
         })
         .attr("fill", this.getColor.bind(this))
         .attr("stroke", this.getStroke.bind(this));
     } else {
       symbols
-        .attr("d", (d) => this.getSymbolPath(d))
-        .attr("transform", (d) => {
-          const pos = this.nhlToSVG(d.coordinates);
+        .attr("d", (d, i) => this.getSymbolPath(d, i))
+        .attr("transform", (d, i) => {
+          const x = this.getX(d, i);
+          const y = this.getY(d, i);
+          const pos = this.nhlToSVG({ x, y });
           return `translate(${pos.x},${pos.y}) scale(1)`;
         })
         .attr("fill", this.getColor.bind(this))
@@ -245,11 +316,11 @@ export class EventLayer extends BaseLayer<HockeyEvent, EventLayerConfig> {
         .transition()
         .duration(this.config.animationDuration)
         .ease(this.getEasing())
-        .attr("transform", function () {
-          const datum = d3.select(this).datum() as HockeyEvent;
-          const pos = (datum.coordinates.x + 100) * 1 + 0;
-          const y = (42.5 - datum.coordinates.y) * 1 + 0;
-          return `translate(${pos},${y}) scale(0)`;
+        .attr("transform", (d, i) => {
+          const x = this.getX(d as TData, i);
+          const y = this.getY(d as TData, i);
+          const pos = this.nhlToSVG({ x, y });
+          return `translate(${pos.x},${pos.y}) scale(0)`;
         })
         .remove();
     } else {
@@ -260,9 +331,9 @@ export class EventLayer extends BaseLayer<HockeyEvent, EventLayerConfig> {
   /**
    * Get the SVG path for a symbol
    */
-  private getSymbolPath(d: HockeyEvent): string {
-    const symbolType = this.getSymbol(d);
-    const size = this.getSymbolSize(d);
+  private getSymbolPath(d: TData, i: number = 0): string {
+    const symbolType = this.getSymbol(d, i);
+    const size = this.getSymbolSize(d, i);
 
     // Handle custom SVG paths from SYMBOL_PATHS
     if (symbolType in SYMBOL_PATHS) {
@@ -304,29 +375,29 @@ export class EventLayer extends BaseLayer<HockeyEvent, EventLayerConfig> {
   /**
    * Get symbol type for an event
    */
-  private getSymbol(d: HockeyEvent): string {
+  private getSymbol(d: TData, i: number = 0): string {
     if (this.config.symbol !== this.getDefaults().symbol) {
       return typeof this.config.symbol === "function"
-        ? this.config.symbol(d)
+        ? this.config.symbol(d, i)
         : this.config.symbol;
     }
 
-    return this.getDefaultSymbol(d);
+    return this.getDefaultSymbol(d, i);
   }
 
   /**
    * Get symbol size for an event
    */
-  private getSymbolSize(d: HockeyEvent): number {
+  private getSymbolSize(d: TData, i: number = 0): number {
     if (this.config.radius !== this.getDefaults().radius) {
       const radius =
         typeof this.config.radius === "function"
-          ? this.config.radius(d)
+          ? this.config.radius(d, i)
           : this.config.radius;
       return Math.PI * radius * radius;
     }
     return typeof this.config.symbolSize === "function"
-      ? this.config.symbolSize(d)
+      ? this.config.symbolSize(d, i)
       : this.config.symbolSize;
   }
 
@@ -334,7 +405,7 @@ export class EventLayer extends BaseLayer<HockeyEvent, EventLayerConfig> {
    * Apply custom attributes to selection
    */
   private applyCustomAttributes<T extends SVGElement>(
-    selection: d3.Selection<T, HockeyEvent, SVGGElement, unknown>,
+    selection: d3.Selection<T, TData, SVGGElement, unknown>,
   ): void {
     const { customAttributes } = this.config;
 
@@ -355,7 +426,7 @@ export class EventLayer extends BaseLayer<HockeyEvent, EventLayerConfig> {
    * Add tooltip interactions to selection
    */
   private addTooltipInteractions<T extends SVGElement>(
-    selection: d3.Selection<T, HockeyEvent, SVGGElement, unknown>,
+    selection: d3.Selection<T, TData, SVGGElement, unknown>,
   ): void {
     if (this.config.showTooltip && EventLayer.sharedTooltip) {
       selection
@@ -389,28 +460,28 @@ export class EventLayer extends BaseLayer<HockeyEvent, EventLayerConfig> {
   /**
    * Get color for an event (handles function or static value)
    */
-  private getColor(d: HockeyEvent): string {
+  private getColor(d: TData, i: number = 0): string {
     return typeof this.config.color === "function"
-      ? this.config.color(d)
+      ? this.config.color(d, i)
       : this.config.color;
   }
 
   /**
    * Get stroke for an event (handles function or static value)
    */
-  private getStroke(d: HockeyEvent): string {
+  private getStroke(d: TData, i: number = 0): string {
     return typeof this.config.stroke === "function"
-      ? this.config.stroke(d)
+      ? this.config.stroke(d, i)
       : this.config.stroke;
   }
 
   /**
    * Show tooltip for an event
    */
-  private showTooltip(event: MouseEvent, d: HockeyEvent): void {
+  private showTooltip(event: MouseEvent, d: TData): void {
     if (!EventLayer.sharedTooltip) return;
 
-    const content = this.config.tooltip(d);
+    const content = this.config.tooltip(d, 0);
     EventLayer.sharedTooltip.html(content).style("visibility", "visible");
     this.moveTooltip(event);
   }
@@ -476,14 +547,14 @@ export class EventLayer extends BaseLayer<HockeyEvent, EventLayerConfig> {
   /**
    * Get default symbol based on event type
    */
-  private getDefaultSymbol(d: HockeyEvent): string {
-    const eventType = (d.type || d.eventType || d.event || d.eventTypeId)
-      ?.toString()
-      .toLowerCase()
-      .replace(/\s+/g, "-");
+  private getDefaultSymbol(d: TData, i: number = 0): string {
+    const eventType = this.getEventType(d, i);
+    if (!eventType) return "circle";
 
-    if (eventType && EventLayer.EVENT_TYPE_SYMBOLS[eventType]) {
-      return EventLayer.EVENT_TYPE_SYMBOLS[eventType];
+    const normalized = eventType.toLowerCase().replace(/\s+/g, "-");
+
+    if (EventLayer.EVENT_TYPE_SYMBOLS[normalized]) {
+      return EventLayer.EVENT_TYPE_SYMBOLS[normalized];
     }
 
     return "circle";

@@ -1,3 +1,5 @@
+/* eslint-disable  @typescript-eslint/no-explicit-any */
+
 /**
  * Abstract base class for all rink layers
  * Provides common functionality for rendering data on the rink
@@ -21,7 +23,7 @@ export interface BaseLayerConfig {
  * Abstract base class that all layers extend
  */
 export abstract class BaseLayer<
-  TData = unknown,
+  TData = any,
   TConfig extends BaseLayerConfig = BaseLayerConfig,
 > {
   protected config: Required<TConfig>;

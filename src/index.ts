@@ -21,6 +21,7 @@ export type {
   SVGCoordinate,
   PeriodInfo,
   HockeyEvent,
+  Accessor,
   RinkConfig,
   RinkColors,
   RenderDimensions,
