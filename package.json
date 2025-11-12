@@ -1,0 +1,46 @@
+{
+  "name": "d3-hockey",
+  "version": "0.1.0",
+  "description": "D3.js library for hockey data visualization",
+  "type": "module",
+  "main": "./dist/d3-hockey.umd.js",
+  "module": "./dist/d3-hockey.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/d3-hockey.js",
+      "require": "./dist/d3-hockey.umd.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "keywords": [
+    "d3",
+    "hockey",
+    "visualization",
+    "nhl",
+    "charts"
+  ],
+  "author": "Sean Kim",
+  "license": "MIT",
+  "peerDependencies": {
+    "d3": "^7.0.0"
+  },
+  "dependencies": {
+    "d3": "^7.9.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.0",
+    "@types/d3": "^7.4.3",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.46.3",
+    "vite": "^7.1.12"
+  }
+}
