@@ -1,7 +1,7 @@
 {
   "name": "d3-hockey",
   "version": "0.1.0",
-  "description": "D3.js library for hockey data visualization",
+  "description": "A comprehensive D3.js library for hockey data visualization with customizable rink rendering, shot charts, heatmaps, and interactive overlays",
   "type": "module",
   "main": "./dist/d3-hockey.umd.js",
   "module": "./dist/d3-hockey.js",
@@ -26,7 +26,8 @@
     "hockey",
     "visualization",
     "nhl",
-    "charts"
+    "charts",
+    "rink"
   ],
   "author": "Sean Kim",
   "license": "MIT",
