@@ -1,0 +1,53 @@
+.demo-container {
+  margin: 2rem 0;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: var(--vp-c-bg-soft);
+}
+
+.demo-header {
+  padding: 0.75rem 1rem;
+  background: linear-gradient(135deg, #003e7e 0%, #c8102e 100%);
+  color: white;
+  font-weight: 600;
+  font-size: 0.9rem;
+  letter-spacing: 0.5px;
+}
+
+.demo-container > div:not(.demo-header) {
+  padding: 2rem 1rem;
+  background-color: var(--vp-c-bg);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+}
+
+.demo-container svg {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+.demo-container > div:not(.demo-header) > div {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+@media (max-width: 768px) {
+  .demo-container > div:not(.demo-header) {
+    padding: 1rem 0.5rem;
+    min-height: 300px;
+  }
+}
+
+.dark .demo-container {
+  border-color: var(--vp-c-divider);
+}
+
+.dark .demo-container > div:not(.demo-header) {
+  background-color: var(--vp-c-bg-soft);
+}

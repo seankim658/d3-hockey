@@ -5,3 +5,5 @@ dist/
 .vscode/
 .idea/
 other/
+docs/.vitepress/dist
+docs/.vitepress/cache
