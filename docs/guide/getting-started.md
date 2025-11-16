@@ -32,10 +32,10 @@ Let's create a simple hockey rink with some shot data.
 import { Rink } from "d3-hockey";
 
 // Create and render a rink
-new Rink("#rink").width(1000).height(425).padding(20).render();
+new Rink("#rink").render();
 ```
 
-That's it! You now have a professional-looking hockey rink.
+That's it! You now have a hockey rink.
 
 ### 2. Add shot data
 
@@ -53,22 +53,18 @@ const shots = [
 ];
 
 // Create rink and add events
-new Rink("#rink")
-  .width(1000)
-  .height(425)
-  .render()
-  .addEvents(shots, {
-    id: "shots",
-    radius: 8,
-    color: (d) => {
-      if (d.eventType === "GOAL") return "#4CAF50";
-      if (d.eventType === "SHOT") return "#2196F3";
-      return "#FF9800";
-    },
-    opacity: 0.7,
-    stroke: "#000",
-    strokeWidth: 1,
-  });
+new Rink("#rink").addEvents(shots, {
+  id: "shots",
+  radius: 8,
+  color: (d) => {
+    if (d.eventType === "GOAL") return "#4CAF50";
+    if (d.eventType === "SHOT") return "#2196F3";
+    return "#FF9800";
+  },
+  opacity: 0.7,
+  stroke: "#000",
+  strokeWidth: 1,
+});
 ```
 
 ## Using NHL API Data
