@@ -21,7 +21,7 @@ const shots = [
   { coordinates: { x: 80, y: 0 }, player: "Hyman" },
 ];
 
-new Rink("#container").width(800).height(340).render().addEvents(shots, {
+new Rink("#container").render().addEvents(shots, {
   id: "shots",
   color: "#FF4C00",
   radius: 5,
@@ -48,21 +48,17 @@ const events = [
   { coordinates: { x: 60, y: -15 }, type: "blocked", player: "Tavares" },
 ];
 
-new Rink("#container")
-  .width(800)
-  .height(340)
-  .render()
-  .addEvents(events, {
-    id: "events",
-    color: colorByCategory("type", {
-      colors: {
-        goal: "#00ff00",
-        shot: "#0088ff",
-        blocked: "#ff6600",
-      },
-    }),
-    symbolSize: 100,
-  });
+new Rink("#container").render().addEvents(events, {
+  id: "events",
+  color: colorByCategory("type", {
+    colors: {
+      goal: "#00ff00",
+      shot: "#0088ff",
+      blocked: "#ff6600",
+    },
+  }),
+  symbolSize: 100,
+});
 ```
 
 ## Dynamic Sizing
@@ -85,20 +81,16 @@ const shotsWithDanger = [
   { coordinates: { x: 55, y: 8 }, xG: 0.05, player: "Johnson" },
 ];
 
-new Rink("#container")
-  .width(800)
-  .height(340)
-  .render()
-  .addEvents(shotsWithDanger, {
-    id: "xg-shots",
-    color: "#c8102e",
-    radius: scaleRadiusByProperty("xG", {
-      min: 3,
-      max: 23,
-      domain: [0, 1],
-    }),
-    opacity: 0.7,
-  });
+new Rink("#container").render().addEvents(shotsWithDanger, {
+  id: "xg-shots",
+  color: "#c8102e",
+  radius: scaleRadiusByProperty("xG", {
+    min: 3,
+    max: 23,
+    domain: [0, 1],
+  }),
+  opacity: 0.7,
+});
 ```
 
 ## Color by Data
@@ -121,21 +113,17 @@ const shots = [
   { coordinates: { x: 65, y: 18 }, xG: 0.08, player: "Coyle" },
 ];
 
-new Rink("#container")
-  .width(800)
-  .height(340)
-  .render()
-  .addEvents(shots, {
-    id: "heat-shots",
-    // Built-in shotQuality scale (yellow to red)
-    color: colorByProperty("xG", {
-      scale: "shotQuality",
-      domain: [0, 0.4],
-    }),
-    radius: 6,
-    stroke: "#fff",
-    strokeWidth: 1.5,
-  });
+new Rink("#container").render().addEvents(shots, {
+  id: "heat-shots",
+  // Built-in shotQuality scale
+  color: colorByProperty("xG", {
+    scale: "shotQuality",
+    domain: [0, 0.4],
+  }),
+  radius: 6,
+  stroke: "#fff",
+  strokeWidth: 1.5,
+});
 ```
 
 ## Custom Tooltips
@@ -168,25 +156,21 @@ const detailedShots = [
   },
 ];
 
-new Rink("#container")
-  .width(800)
-  .height(340)
-  .render()
-  .addEvents(detailedShots, {
-    id: "detailed-shots",
-    color: colorByCategory("result", {
-      colors: {
-        Goal: "#00ff00",
-        Save: "#0088ff",
-      },
-    }),
-    radius: 5,
-    tooltip: (d) => `<strong>${d.player}</strong><br/>
+new Rink("#container").render().addEvents(detailedShots, {
+  id: "detailed-shots",
+  color: colorByCategory("result", {
+    colors: {
+      Goal: "#00ff00",
+      Save: "#0088ff",
+    },
+  }),
+  radius: 5,
+  tooltip: (d) => `<strong>${d.player}</strong><br/>
       ${d.shotType} - ${d.result}<br/>
       Speed: ${d.speed} MPH<br/>
       Location: (${d.coordinates.x.toFixed(1)}, ${d.coordinates.y.toFixed(1)})
     `,
-  });
+});
 ```
 
 ## Animation Control
@@ -208,7 +192,7 @@ const shots = [
   { coordinates: { x: 68, y: 12 }, player: "Rust" },
 ];
 
-new Rink("#container").width(800).height(340).render().addEvents(shots, {
+new Rink("#container").render().addEvents(shots, {
   id: "animated-shots",
   color: "#FCB514",
   radius: 5,
@@ -243,7 +227,7 @@ const awayShots = [
   { coordinates: { x: -70, y: 12 }, team: "away" },
 ];
 
-const rink = new Rink("#container").width(800).height(340).render();
+const rink = new Rink("#container").render();
 
 // Add home team shots
 rink.addEvents(homeShots, {
@@ -278,7 +262,6 @@ onMounted(async () => {
     const basicContainer = document.getElementById('demo-basic-shot-chart')
     if (basicContainer) {
       new Rink(basicContainer)
-        .width(800).height(340)
         .render()
         .addEvents(basicShots, { id: 'shots', color: '#FF4C00', radius: 5 })
     }
@@ -293,7 +276,6 @@ onMounted(async () => {
     const symbolContainer = document.getElementById('demo-symbol-types')
     if (symbolContainer) {
       new Rink(symbolContainer)
-        .width(800).height(340)
         .render()
         .addEvents(symbolEvents, {
           id: 'events',
@@ -314,7 +296,6 @@ onMounted(async () => {
     const dynamicContainer = document.getElementById('demo-dynamic-sizing')
     if (dynamicContainer) {
       new Rink(dynamicContainer)
-        .width(800).height(340)
         .render()
         .addEvents(shotsWithDanger, {
           id: 'xg-shots',
@@ -334,7 +315,6 @@ onMounted(async () => {
     const colorContainer = document.getElementById('demo-color-by-data')
     if (colorContainer) {
       new Rink(colorContainer)
-        .width(800).height(340)
         .render()
         .addEvents(heatShots, {
           id: 'heat-shots',
@@ -353,7 +333,6 @@ onMounted(async () => {
     const tooltipContainer = document.getElementById('demo-custom-tooltips')
     if (tooltipContainer) {
       new Rink(tooltipContainer)
-        .width(800).height(340)
         .render()
         .addEvents(detailedShots, {
           id: 'detailed-shots',
@@ -379,7 +358,6 @@ onMounted(async () => {
     const animationContainer = document.getElementById('demo-animation-control')
     if (animationContainer) {
       new Rink(animationContainer)
-        .width(800).height(340)
         .render()
         .addEvents(animatedShots, {
           id: 'animated-shots',
@@ -404,7 +382,7 @@ onMounted(async () => {
     ]
     const multiLayerContainer = document.getElementById('demo-multiple-layers')
     if (multiLayerContainer) {
-      const multiLayerRink = new Rink(multiLayerContainer).width(800).height(340).render()
+      const multiLayerRink = new Rink(multiLayerContainer).render()
       multiLayerRink.addEvents(homeShots, { id: 'home', color: '#003e7e', radius: 5, opacity: 0.7 })
       multiLayerRink.addEvents(awayShots, { id: 'away', color: '#c8102e', radius: 5, opacity: 0.7 })
     }

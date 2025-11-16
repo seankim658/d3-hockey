@@ -15,7 +15,7 @@ The most basic usage - just create a rink and render it.
 ```typescript
 import { Rink } from "d3-hockey";
 
-new Rink("#container").width(800).height(340).render();
+new Rink("#container").render();
 ```
 
 ## Custom Colors
@@ -32,8 +32,6 @@ Override default colors to match team branding or personal preferences.
 import { Rink } from "d3-hockey";
 
 new Rink("#container")
-  .width(800)
-  .height(340)
   .colors({
     ice: "#000000",
     boards: "#003e7e",
@@ -59,7 +57,7 @@ import { Rink } from "d3-hockey";
 new Rink("#container")
   .width(600)
   .height(340)
-  .halfRink(true, "offensive") // or "defensive"
+  .halfRink(true, "offensive") // TODO : or "defensive"
   .render();
 ```
 
@@ -76,7 +74,7 @@ Adjust dimensions and padding to fit your layout requirements.
 ```typescript
 import { Rink } from "d3-hockey";
 
-new Rink("#container").width(600).height(255).padding(10).render();
+new Rink("#container").width(500).height(255).render();
 ```
 
 <script setup>
@@ -89,16 +87,13 @@ onMounted(async () => {
     // Basic Rink
     const basicContainer = document.getElementById('basic-rink-demo')
     if (basicContainer) {
-      new Rink(basicContainer).width(800).height(340).render()
+      new Rink(basicContainer).render()
     }
     
     // Custom Colors
     const colorsContainer = document.getElementById('custom-colors-demo')
     if (colorsContainer) {
       new Rink(colorsContainer)
-        .width(800)
-        .height(340)
-        .padding(20)
         .colors({
           ice: '#000000',
           boards: '#003e7e',
@@ -108,13 +103,10 @@ onMounted(async () => {
         .render()
     }
     
-    // Half Rink
+    // TODO Half Rink
     const halfContainer = document.getElementById('half-rink-demo')
     if (halfContainer) {
       new Rink(halfContainer)
-        .width(600)
-        .height(340)
-        .padding(20)
         .halfRink(true, 'offensive')
         .render()
     }
@@ -123,9 +115,8 @@ onMounted(async () => {
     const sizingContainer = document.getElementById('custom-sizing-demo')
     if (sizingContainer) {
       new Rink(sizingContainer)
-        .width(600)
+        .width(500)
         .height(255)
-        .padding(10)
         .render()
     }
   }, 100)
@@ -145,7 +136,7 @@ function HockeyRink() {
 
   useEffect(() => {
     if (containerRef.current) {
-      new Rink(containerRef.current).width(800).height(340).render();
+      new Rink(containerRef.current).render();
     }
   }, []);
 
@@ -167,7 +158,7 @@ import { Rink } from "d3-hockey";
 const container = ref(null);
 
 onMounted(() => {
-  new Rink(container.value).width(800).height(340).render();
+  new Rink(container.value).render();
 });
 </script>
 ```
@@ -186,7 +177,7 @@ export class HockeyRinkComponent implements AfterViewInit {
   @ViewChild("container") container!: ElementRef;
 
   ngAfterViewInit() {
-    new Rink(this.container.nativeElement).width(800).height(340).render();
+    new Rink(this.container.nativeElement).render();
   }
 }
 ```
@@ -201,10 +192,7 @@ export class HockeyRinkComponent implements AfterViewInit {
   let container;
 
   onMount(() => {
-    new Rink(container)
-      .width(800)
-      .height(340)
-      .render();
+    new Rink(container).render();
   });
 </script>
 
