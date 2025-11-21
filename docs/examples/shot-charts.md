@@ -1,10 +1,10 @@
 # Shot Charts
 
-Visualize shot data with customizable markers, colors, and interactive tooltips.
+Visualize shot data with customizable markers, colors, and interactive tooltips. These examples can all be generalized for any type(s) of game event, but in these examples we will use shots.
 
 ## Basic Shot Chart
 
-Plot shot locations with simple circles—the foundation of hockey analytics visualization.
+Plot shot locations with simple circles.
 
 <ClientOnly>
   <Demo title="Basic Shot Chart">
@@ -30,7 +30,7 @@ new Rink("#container").render().addEvents(shots, {
 
 ## Different Symbol Types
 
-Use different symbols to distinguish between event types—goals as stars, shots as circles, and blocks as crosses.
+Use different symbols to distinguish between event types. By default the goals are stars, shots are circles, and blocks are crosses (the default selections can all be overwritten).
 
 <ClientOnly>
   <Demo title="Different Symbol Types">
@@ -120,9 +120,10 @@ new Rink("#container").render().addEvents(shots, {
     scale: "shotQuality",
     domain: [0, 0.4],
   }),
-  radius: 6,
+  radius: 8,
   stroke: "#fff",
   strokeWidth: 1.5,
+  opacity: 0.7,
 });
 ```
 
@@ -144,29 +145,29 @@ const detailedShots = [
     coordinates: { x: 82, y: 8 },
     player: "Ovechkin",
     shotType: "Wrist Shot",
-    result: "Goal",
+    type: "goal",
     speed: 98,
   },
   {
     coordinates: { x: 68, y: -15 },
     player: "Backstrom",
     shotType: "Snap Shot",
-    result: "Save",
+    type: "shot",
     speed: 85,
   },
 ];
 
 new Rink("#container").render().addEvents(detailedShots, {
   id: "detailed-shots",
-  color: colorByCategory("result", {
+  color: colorByCategory("type", {
     colors: {
-      Goal: "#00ff00",
-      Save: "#0088ff",
+      goal: "#00ff00",
+      shot: "#0088ff",
     },
   }),
   radius: 5,
   tooltip: (d) => `<strong>${d.player}</strong><br/>
-      ${d.shotType} - ${d.result}<br/>
+      ${d.shotType} - ${d.type}<br/>
       Speed: ${d.speed} MPH<br/>
       Location: (${d.coordinates.x.toFixed(1)}, ${d.coordinates.y.toFixed(1)})
     `,
@@ -179,7 +180,22 @@ Control animation timing and easing for smooth, professional transitions.
 
 <ClientOnly>
   <Demo title="Animation Control">
-    <div id="demo-animation-control" style="width: 100%; display: flex; justify-content: center;"></div>
+    <div style="width: 100%; display: flex; flex-direction: column; align-items: center; gap: 10px;">
+      <button id="replay-animation" style="
+        padding: 8px 16px;
+        background-color: #FCB514;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 600;
+        transition: background-color 0.2s;
+      " onmouseover="this.style.backgroundColor='#E5A013'" onmouseout="this.style.backgroundColor='#FCB514'">
+        Replay Animation
+      </button>
+      <div id="demo-animation-control" style="width: 100%; display: flex; justify-content: center;"></div>
+    </div>
   </Demo>
 </ClientOnly>
 
@@ -247,12 +263,14 @@ rink.addEvents(awayShots, {
 ```
 
 <script setup>
+
 import { onMounted } from 'vue'
 
 onMounted(async () => {
   const { Rink, scaleRadiusByProperty, colorByProperty, colorByCategory } = await import('d3-hockey')
 
   setTimeout(() => {
+
     // Basic Shot Chart
     const basicShots = [
       { coordinates: { x: 70, y: 15 }, player: 'McDavid' },
@@ -319,16 +337,17 @@ onMounted(async () => {
         .addEvents(heatShots, {
           id: 'heat-shots',
           color: colorByProperty('xG', { scale: 'shotQuality', domain: [0, 0.4] }),
-          radius: 6,
+          radius: 8,
           stroke: '#fff',
-          strokeWidth: 1.5
+          strokeWidth: 1.5,
+          opacity: 0.7,
         })
     }
 
     // Custom Tooltips
     const detailedShots = [
-      { coordinates: { x: 82, y: 8 }, player: 'Ovechkin', shotType: 'Wrist Shot', result: 'Goal', speed: 98 },
-      { coordinates: { x: 68, y: -15 }, player: 'Backstrom', shotType: 'Snap Shot', result: 'Save', speed: 85 }
+      { coordinates: { x: 82, y: 8 }, player: 'Ovechkin', shotType: 'Wrist Shot', type: 'goal', speed: 98 },
+      { coordinates: { x: 68, y: -15 }, player: 'Backstrom', shotType: 'Snap Shot', type: 'shot', speed: 85 }
     ]
     const tooltipContainer = document.getElementById('demo-custom-tooltips')
     if (tooltipContainer) {
@@ -336,14 +355,14 @@ onMounted(async () => {
         .render()
         .addEvents(detailedShots, {
           id: 'detailed-shots',
-          color: colorByCategory('result', {
-            colors: { Goal: '#00ff00', Save: '#0088ff' }
+          color: colorByCategory('type', {
+            colors: { goal: '#00ff00', shot: '#0088ff' }
           }),
           radius: 5,
           tooltip: (d) => `
             <strong>${d.player}</strong><br/>
-            ${d.shotType} - ${d.result}<br/>
-            Speed: ${d.speed} MPH<br/>
+            ${d.shotType} - ${d.type}<br/>
+            Speed: ${d.speed} mph<br/>
             Location: (${d.coordinates.x.toFixed(1)}, ${d.coordinates.y.toFixed(1)})
           `
         })
@@ -356,8 +375,11 @@ onMounted(async () => {
       { coordinates: { x: 68, y: 12 }, player: 'Rust' }
     ]
     const animationContainer = document.getElementById('demo-animation-control')
-    if (animationContainer) {
-      new Rink(animationContainer)
+    let animationRink = null
+
+    const playAnimation = () => {
+      if (animationContainer) {
+        new Rink(animationContainer)
         .render()
         .addEvents(animatedShots, {
           id: 'animated-shots',
@@ -367,6 +389,14 @@ onMounted(async () => {
           animationDuration: 800,
           animationEasing: 'easeElasticOut'
         })
+      }
+    }
+    
+    playAnimation()
+
+    const replayButton = document.getElementById('replay-animation')
+    if (replayButton) {
+        replayButton.addEventListener('click', playAnimation)
     }
 
     // Multiple Layers

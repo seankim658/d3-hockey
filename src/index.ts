@@ -30,6 +30,7 @@ export type {
   LayerEventType,
   HockeyEventSymbolType,
   AnimationEasing,
+  CustomRenderContext,
   // NHL API types
   PeriodDescriptor,
   NHLBaseEvent,

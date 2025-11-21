@@ -22,6 +22,10 @@ Use the built-in NHL team color palette to create team-specific visualizations.
 
 ## Advanced Examples
 
+### [Advanced Customization](/examples/advanced-customization)
+
+Master the `customRender` hook to create sophisticated visualizations with player labels, speed rings, custom interactions, composite elements, and more.
+
 ### [Interactive Visualizations](/examples/interactive)
 
 Add tooltips, click handlers, and zoom functionality to your charts.

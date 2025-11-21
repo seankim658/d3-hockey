@@ -11,6 +11,7 @@ import type {
   RenderDimensions,
   HockeyEventSymbolType,
   AnimationEasing,
+  CustomRenderContext,
 } from "../../types";
 import { SYMBOL_PATHS } from "../../constants";
 
@@ -46,6 +47,7 @@ export interface EventLayerConfig<TData = any> extends BaseLayerConfig {
   customRender?: (
     selection: d3.Selection<SVGElement, TData, SVGGElement, unknown>,
     dimensions: RenderDimensions,
+    context: CustomRenderContext<TData, EventLayer<TData>>,
   ) => void;
   customAttributes?: {
     [key: string]: string | number | Accessor<TData, string | number>;
@@ -91,7 +93,7 @@ export class EventLayer<TData = any> extends BaseLayer<
       eventType: EventLayer.defaultEventTypeAccessor,
       // Event layer defaults
       radius: 4,
-      color: "#c8102e",
+      color: "#FF4C00",
       stroke: "#000000",
       strokeWidth: 1,
       showTooltip: true,
@@ -104,6 +106,7 @@ export class EventLayer<TData = any> extends BaseLayer<
       customRender: (() => {}) as (
         selection: d3.Selection<SVGElement, TData, SVGGElement, unknown>,
         dimensions: RenderDimensions,
+        context: CustomRenderContext<TData, EventLayer<TData>>,
       ) => void,
       customAttributes: {},
       legendLabel: "",
@@ -209,6 +212,17 @@ export class EventLayer<TData = any> extends BaseLayer<
   }
 
   /**
+   * Check if customRender is defined and not the default empty function
+   */
+  private hasCustomRender(): boolean {
+    const defaultRender = this.getDefaults().customRender;
+    return (
+      this.config.customRender !== undefined &&
+      this.config.customRender !== defaultRender
+    );
+  }
+
+  /**
    * Render all events on the rink
    */
   render(): void {
@@ -242,15 +256,28 @@ export class EventLayer<TData = any> extends BaseLayer<
         return String(obj.id ?? obj.eventId ?? `event-${i}`);
       });
 
+    const positionMap = new Map<
+      TData,
+      CustomRenderContext<TData>["position"]
+    >();
+
     const enter = symbols
       .enter()
       .append("path")
       .attr("class", "event-symbol")
       .attr("d", (d) => this.getSymbolPath(d))
       .attr("transform", (d, i) => {
-        const x = this.getX(d, i);
-        const y = this.getY(d, i);
-        const pos = this.nhlToSVG({ x, y });
+        const dataX = this.getX(d, i);
+        const dataY = this.getY(d, i);
+        const pos = this.nhlToSVG({ x: dataX, y: dataY });
+
+        positionMap.set(d, {
+          svgX: pos.x,
+          svgY: pos.y,
+          dataX,
+          dataY,
+        });
+
         return `translate(${pos.x},${pos.y}) scale(0)`;
       })
       .attr("fill", this.getColor.bind(this))
@@ -260,6 +287,33 @@ export class EventLayer<TData = any> extends BaseLayer<
 
     this.applyCustomAttributes(enter);
     this.addTooltipInteractions(enter);
+
+    if (this.hasCustomRender()) {
+      enter.each((d, i, nodes) => {
+        const node = nodes[i];
+        const position = positionMap.get(d)!;
+        const container = node.parentNode as SVGGElement;
+
+        const context: CustomRenderContext<TData, EventLayer<TData>> = {
+          position,
+          data: d,
+          index: i,
+          container,
+          layer: this,
+        };
+
+        this.config.customRender!(
+          d3.select(node) as unknown as d3.Selection<
+            SVGElement,
+            TData,
+            SVGGElement,
+            unknown
+          >,
+          this.dimensions,
+          context,
+        );
+      });
+    }
 
     if (this.config.animate) {
       enter

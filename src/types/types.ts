@@ -147,6 +147,22 @@ export interface RenderDimensions {
 }
 
 /**
+ * Context provided to customRender callback.
+ */
+export interface CustomRenderContext<TData = unknown, TLayer = unknown> {
+  position: {
+    svgX: number;
+    svgY: number;
+    dataX: number;
+    dataY: number;
+  };
+  data: TData;
+  index: number;
+  container: SVGGElement;
+  layer: TLayer;
+}
+
+/**
  * Layer types available in the library
  */
 export type LayerType = "shot" | "heatmap" | "zone" | "path" | "custom";

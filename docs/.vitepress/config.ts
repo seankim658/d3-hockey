@@ -41,12 +41,22 @@ export default defineConfig({
         },
       ],
       "/examples/": [
+        { text: "Overview", link: "/examples/" },
         {
           text: "Basic Examples",
           items: [
-            { text: "Overview", link: "/examples/" },
             { text: "Basic Rink", link: "/examples/basic-rink" },
             { text: "Shot Charts", link: "/examples/shot-charts" },
+          ],
+        },
+        {
+          text: "Advanced Examples",
+          items: [
+            {
+              text: "Custom Render",
+              link: "/examples/advanced-customization/",
+            },
+            { text: "NHL API Data", link: "/examples/nhl-api-data/" },
           ],
         },
       ],
@@ -57,6 +67,8 @@ export default defineConfig({
             { text: "Overview", link: "/api/" },
             { text: "Rink", link: "/api/rink" },
             { text: "EventLayer", link: "/api/event-layer" },
+            { text: "BaseLayer", link: "/api/base-layer" },
+            { text: "LayerManager", link: "/api/layer-manager" },
             { text: "Utilities", link: "/api/utilities" },
             { text: "Types", link: "/api/types" },
           ],

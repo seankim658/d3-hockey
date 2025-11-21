@@ -67,6 +67,68 @@ new Rink("#rink").addEvents(shots, {
 });
 ```
 
+## Customization Levels
+
+d3-hockey provides multiple levels of customization to fit your needs:
+
+### Level 1: Configuration (Recommended for Most Use Cases)
+
+Use the built-in configuration options for quick, powerful visualizations:
+
+```typescript
+addEvents(shots, {
+  color: "#FF4C00",
+  radius: 6,
+  symbol: "star",
+  opacity: 0.7,
+  stroke: "#000",
+});
+```
+
+### Level 2: Custom Attributes
+
+Add SVG attributes to event elements:
+
+```typescript
+addEvents(shots, {
+  customAttributes: {
+    class: (d) => `shot-${d.type}`,
+    "data-player": (d) => d.player,
+    "data-speed": (d) => d.speed,
+  },
+});
+```
+
+### Level 3: Custom Render Hook
+
+Get full D3 selection access for advanced customization:
+
+```typescript
+addEvents(shots, {
+  customRender: (selection, dimensions) => {
+    // Add player labels
+    selection.each(function (d) {
+      const parent = d3.select(this.parentNode);
+      parent.append("text").attr("dx", 10).text(d.player);
+    });
+  },
+});
+```
+
+See [Advanced Customization](/examples/advanced-customization) for detailed examples.
+
+### Level 4: Custom Layers
+
+For completely custom visualizations, extend the `BaseLayer` class:
+
+```typescript
+class MyCustomLayer extends BaseLayer {
+  render() {
+    // Your custom rendering logic
+  }
+}
+```
+
 ## Using NHL API Data
 
 d3-hockey has built-in support for NHL API data:
@@ -105,6 +167,7 @@ Now that you've created your first visualization, explore these topics:
 - [Core Concepts](/guide/core-concepts) - Understand the layer system
 - [Creating a Rink](/guide/creating-a-rink) - All rink configuration options
 - [Working with Layers](/guide/working-with-layers) - Layer types and customization
+- [Advanced Customization](/examples/advanced-customization) - Master the customRender hook
 - [Examples](/examples/) - See more visualization patterns
 
 ## Need Help?
