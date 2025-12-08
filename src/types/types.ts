@@ -132,6 +132,7 @@ export interface RinkColors {
   redLine: string;
   blueLine: string;
   faceoff: string;
+  centerSpot: string;
   crease: string;
   line: string;
 }

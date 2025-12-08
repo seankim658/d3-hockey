@@ -24,11 +24,11 @@ export const RINK_DIMENSIONS = {
   // Length of main 'L' hash on faceoff circle
   FACEOFF_HASH_MAIN_LEG: 3,
   // Length of cross 'L' hash on faceoff circle
-  FACEOFF_HASH_CROSS_LEG: 1 + 10 / 12, // 1' 10"
+  FACEOFF_HASH_CROSS_LEG: 2,
   // Y-offset from faceoff center to start of hash
-  FACEOFF_HASH_Y_OFFSET: 1.5, // 1' 6"
+  FACEOFF_HASH_Y_OFFSET: 2,
   // X-offset from faceoff center to start of hash
-  FACEOFF_HASH_X_OFFSET: 1, // Half of 2'
+  FACEOFF_HASH_X_OFFSET: 1.5,
   // Goal crease radius
   CREASE_RADIUS: 6,
   // Goal width
@@ -89,6 +89,8 @@ export const RINK_COLORS = {
   BLUE_LINE: "#003e7e",
   // Faceoff circle and dot color
   FACEOFF: "#c8102e",
+  // Center faceoff spot
+  CENTER_SPOT: "#003e7e",
   // Goal crease color
   CREASE: "#7db9de",
   // Default line color for other markings

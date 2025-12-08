@@ -12,7 +12,12 @@ import {
   LINE_WIDTHS,
 } from "../constants";
 import { calculateScale } from "../utils/coordinates";
-import type { RinkConfig, RinkColors, RenderDimensions, HockeyEvent } from "../types";
+import type {
+  RinkConfig,
+  RinkColors,
+  RenderDimensions,
+  HockeyEvent,
+} from "../types";
 import { LayerManager } from "./layers/layer-manager";
 import { EventLayer, EventLayerConfig } from "./layers/event-layer";
 import type { BaseLayer } from "./layers/base-layer";
@@ -70,6 +75,7 @@ export class Rink {
         redLine: RINK_COLORS.RED_LINE,
         blueLine: RINK_COLORS.BLUE_LINE,
         faceoff: RINK_COLORS.FACEOFF,
+        centerSpot: RINK_COLORS.CENTER_SPOT,
         crease: RINK_COLORS.CREASE,
         line: RINK_COLORS.LINE,
       },
@@ -486,7 +492,13 @@ export class Rink {
       .attr("stroke-width", lineWidth);
 
     // Center faceoff dot
-    this.drawFaceoffDot(group, 0, 0, "center-dot");
+    this.drawFaceoffDot(
+      group,
+      0,
+      0,
+      "center-dot",
+      this.config.colors.centerSpot || this.config.colors.blueLine,
+    );
   }
 
   /**
@@ -555,8 +567,8 @@ export class Rink {
     x: number,
     y: number,
     className: string,
+    color?: string,
   ): void {
-    // Convert dot radius from inches to feet, then to pixels
     const radius = this.feetToPixels(RINK_DIMENSIONS.FACEOFF_DOT_RADIUS / 12);
 
     group
@@ -565,7 +577,7 @@ export class Rink {
       .attr("cx", this.getX(x))
       .attr("cy", this.getY(y))
       .attr("r", radius)
-      .attr("fill", this.config.colors.faceoff);
+      .attr("fill", color || this.config.colors.faceoff);
   }
 
   /**

@@ -107,7 +107,7 @@ async function renderGame() {
       // Add a stroke to make overlapping points clearer
       stroke: "#000000",
       strokeWidth: 1,
-      opacity: 0.8,
+      opacity: 0.65,
     });
   } catch (error) {
     console.error("Failed to load game data:", error);
@@ -220,8 +220,8 @@ onMounted(async () => {
         </div>
       `,
       stroke: "#000000",
-      strokeWidth: 0.5,
-      opacity: 0.85
+      strokeWidth: 1,
+      opacity: 0.65
     });
   } catch (e) { 
     console.error(e); 
