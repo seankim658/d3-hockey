@@ -31,8 +31,12 @@ export type {
   HockeyEventSymbolType,
   AnimationEasing,
   CustomRenderContext,
-  // NHL API types
+} from "./types";
+
+export type {
   PeriodDescriptor,
+  NHLTeamInfo,
+  NHLPlayerInfo,
   NHLBaseEvent,
   EventDetailsWithLocation,
   ShotOnGoalEvent,
@@ -46,7 +50,9 @@ export type {
   NHLEventWithLocation,
   NHLEventWithoutLocation,
   NHLEvent,
-} from "./types";
+  NHLPlayByPlayResponse,
+  NHLPlayerResponse,
+} from "./nhl";
 
 export {
   hasLocation,
@@ -59,7 +65,19 @@ export {
   isTakeaway,
   isPenalty,
   isShotEvent,
-} from "./types";
+  NHL_EVENT_TYPE_CODES,
+} from "./nhl";
+
+export {
+  nhlEventToHockeyEvent,
+  parseNHLEvents,
+  parseNHLPlayByPlay,
+  parseNHLEventsWithFilter,
+  parseNHLEventsByTeam,
+  type ParseOptions,
+} from "./nhl";
+
+export { NHLDataManager, type FetchOptions, type TeamData } from "./nhl";
 
 export {
   nhlToSVG,
@@ -78,8 +96,6 @@ export {
   filterByPeriod,
   groupBy,
   calculateStats,
-  parseNHLAPIResponse,
-  parseNHLAPIEventArray,
 } from "./utils/data-utils";
 
 export {

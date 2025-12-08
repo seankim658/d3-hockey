@@ -43,12 +43,16 @@ export const NHL_TEAM_COLORS = {
   WPG: { primary: "#041E42", secondary: "#004C97", accent: "#AC162C" },
 } as const;
 
+export interface TeamColors {
+  primary: string;
+  secondary: string;
+  accent: string;
+}
+
 /**
  * Get team colors by abbreviation
  */
-export function getTeamColors(
-  teamAbbr: string,
-): { primary: string; secondary: string; accent: string } | null {
+export function getTeamColors(teamAbbr: string): TeamColors | null {
   const colors =
     NHL_TEAM_COLORS[teamAbbr.toUpperCase() as keyof typeof NHL_TEAM_COLORS];
   return colors || null;

@@ -63,7 +63,7 @@ new Rink("#container").render().addEvents(events, {
 
 ## Dynamic Sizing
 
-Size events based on data properties—larger circles for higher shot danger or expected goals.
+Size events based on data properties, larger circles for higher shot danger or expected goals.
 
 <ClientOnly>
   <Demo title="Dynamic Sizing">
@@ -220,7 +220,7 @@ new Rink("#container").render().addEvents(shots, {
 
 ## Multiple Event Layers
 
-Combine multiple event layers to show different data sets simultaneously—home vs. away, different periods, or multiple players.
+Combine multiple event layers to show different data sets simultaneously, home vs. away, different periods, or multiple players.
 
 <ClientOnly>
   <Demo title="Multiple Event Layers">

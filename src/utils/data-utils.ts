@@ -1,6 +1,4 @@
 import type { HockeyEvent } from "../types";
-import { parseNHLAPIEvents, extractNHLAPIEvents } from "./nhl-api-events";
-import type { NHLAPIPlayByPlayResponse } from "./nhl-api-events";
 
 /**
  * Validate that data has required coordinate fields
@@ -109,24 +107,4 @@ export function calculateStats(
     min: Math.min(...values),
     max: Math.max(...values),
   };
-}
-
-/**
- * Parse NHL API play-by-play data into a HockeyEvent array
- *
- * Automatically filters out irrelevant events (faceoffs, stoppages, etc.)
- */
-export function parseNHLAPIResponse(
-  apiResponse: NHLAPIPlayByPlayResponse,
-): HockeyEvent[] {
-  return extractNHLAPIEvents(apiResponse);
-}
-
-/**
- * Parse raw NHL API event array into HockeyEvent array
- */
-export function parseNHLAPIEventArray(
-  events: Array<Record<string, unknown>>,
-): HockeyEvent[] {
-  return parseNHLAPIEvents(events);
 }

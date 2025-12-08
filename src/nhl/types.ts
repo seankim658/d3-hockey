@@ -1,6 +1,10 @@
+/* eslint-disable  @typescript-eslint/no-explicit-any */
+
 /**
- * NHL API Event Type Definitions
- * Based on the actual NHL play-by-play API structure
+ * NHL API Type Definitions
+ *
+ * Comprehensive type definitions for the NHL API v1
+ * Based on api-web.nhle.com endpoints
  */
 
 /**
@@ -13,7 +17,31 @@ export interface PeriodDescriptor {
 }
 
 /**
- * Base event structure that all NHL events share
+ * Team information from NHL API
+ */
+export interface NHLTeamInfo {
+  id: number;
+  commonName: { default: string };
+  abbrev: string;
+  placeName: { default: string };
+  score?: number;
+  sog?: number;
+  logo?: string;
+}
+
+/**
+ * Player information from roster endpoint
+ */
+export interface NHLPlayerInfo {
+  playerId: number;
+  firstName: { default: string; [key: string]: string };
+  lastName: { default: string; [key: string]: string };
+  playerSlug: string;
+}
+
+/**
+ * Base NHL API event structure
+ * Common fields present in all events
  */
 export interface NHLBaseEvent {
   eventId: number;
@@ -25,32 +53,30 @@ export interface NHLBaseEvent {
   typeCode: number;
   typeDescKey: string;
   sortOrder: number;
+  details?: any;
 }
 
 /**
- * Base event details with coordinates
- * Only events with locations extend this
+ * Event details with location information
  */
 export interface EventDetailsWithLocation {
   xCoord: number;
   yCoord: number;
-  zoneCode: "O" | "D" | "N"; // Offensive, Defensive, Neutral
+  zoneCode: "D" | "N" | "O"; // Defensive, Neutral, Offensive
   eventOwnerTeamId: number;
 }
 
 /**
- * Shot-on-goal event
+ * Shot on goal event
  * typeDescKey: "shot-on-goal"
  * typeCode: 506
  */
 export interface ShotOnGoalEvent extends NHLBaseEvent {
   typeDescKey: "shot-on-goal";
   details: EventDetailsWithLocation & {
-    shotType: string;
     shootingPlayerId: number;
-    goalieInNetId: number;
-    awaySOG?: number;
-    homeSOG?: number;
+    shotType: string;
+    goalieInNetId?: number;
   };
 }
 
@@ -62,10 +88,10 @@ export interface ShotOnGoalEvent extends NHLBaseEvent {
 export interface MissedShotEvent extends NHLBaseEvent {
   typeDescKey: "missed-shot";
   details: EventDetailsWithLocation & {
-    reason: string;
-    shotType: string;
     shootingPlayerId: number;
-    goalieInNetId: number;
+    shotType: string;
+    reason: string; // e.g., 'wide-left', 'over-net', 'hit-right-post'
+    goalieInNetId?: number;
   };
 }
 
@@ -77,9 +103,9 @@ export interface MissedShotEvent extends NHLBaseEvent {
 export interface BlockedShotEvent extends NHLBaseEvent {
   typeDescKey: "blocked-shot";
   details: EventDetailsWithLocation & {
-    blockingPlayerId: number;
     shootingPlayerId: number;
-    reason: string;
+    blockingPlayerId: number;
+    reason?: string;
   };
 }
 
@@ -91,19 +117,11 @@ export interface BlockedShotEvent extends NHLBaseEvent {
 export interface GoalEvent extends NHLBaseEvent {
   typeDescKey: "goal";
   details: EventDetailsWithLocation & {
-    shotType: string;
     scoringPlayerId: number;
-    scoringPlayerTotal: number;
     assist1PlayerId?: number;
-    assist1PlayerTotal?: number;
     assist2PlayerId?: number;
-    assist2PlayerTotal?: number;
-    goalieInNetId: number;
-    awayScore: number;
-    homeScore: number;
-    strength?: string;
-    highlightClip?: number;
-    highlightClipSharingUrl?: string;
+    shotType: string;
+    goalieInNetId?: number;
   };
 }
 
@@ -174,7 +192,7 @@ export type NHLEventWithLocation =
   | PenaltyEvent;
 
 /**
- * Events without coordinates
+ * Events without coordinates (not typically used for visualization)
  */
 export type NHLEventWithoutLocation = NHLBaseEvent & {
   typeDescKey:
@@ -196,6 +214,46 @@ export type NHLEventWithoutLocation = NHLBaseEvent & {
  * Any NHL API event
  */
 export type NHLEvent = NHLEventWithLocation | NHLEventWithoutLocation;
+
+/**
+ * NHL API play-by-play response structure
+ */
+export interface NHLPlayByPlayResponse {
+  id: number;
+  season: number;
+  gameType: number;
+  gameDate: string;
+  venue: { default: string };
+  awayTeam: NHLTeamInfo;
+  homeTeam: NHLTeamInfo;
+  plays: NHLEvent[];
+  [key: string]: unknown;
+}
+
+/**
+ * NHL API player endpoint response
+ */
+export interface NHLPlayerResponse {
+  playerId: number;
+  firstName: { default: string; [key: string]: string };
+  lastName: { default: string; [key: string]: string };
+  currentTeamRoster?: NHLPlayerInfo[];
+  [key: string]: unknown;
+}
+
+/**
+ * Event type codes from NHL API
+ */
+export const NHL_EVENT_TYPE_CODES = {
+  HIT: 503,
+  GIVEAWAY: 504,
+  GOAL: 505,
+  SHOT_ON_GOAL: 506,
+  MISSED_SHOT: 507,
+  BLOCKED_SHOT: 508,
+  PENALTY: 509,
+  TAKEAWAY: 505, // Note: Same as goal in some API versions
+} as const;
 
 /**
  * Type guard to check if an event has location data

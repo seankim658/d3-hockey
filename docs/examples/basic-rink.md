@@ -4,7 +4,7 @@ Render a hockey rink with default NHL dimensions and styling.
 
 ## Simple Rink
 
-The most basic usage - just create a rink and render it.
+The most basic usage, just create a rink and render it.
 
 <ClientOnly>
   <Demo title="Basic Rink">
