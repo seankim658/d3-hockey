@@ -5,7 +5,7 @@ export default defineConfig({
   title: "d3-hockey",
   description:
     "A comprehensive D3.js library for hockey data visualization with customizable rink rendering, shot charts, heatmaps, and interactive overlays",
-  base: "/",
+  base: "/d3-hockey/",
 
   themeConfig: {
     nav: [
