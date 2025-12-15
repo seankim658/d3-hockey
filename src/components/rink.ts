@@ -1,3 +1,5 @@
+/* eslint-disable  @typescript-eslint/no-explicit-any */
+
 /**
  * Rink renderer component
  * Draws NHL regulation hockey rink with all markings
@@ -20,6 +22,7 @@ import type {
 } from "../types";
 import { LayerManager } from "./layers/layer-manager";
 import { EventLayer, EventLayerConfig } from "./layers/event-layer";
+import { HexbinLayer, HexbinLayerConfig } from "./layers/hexbin-layer";
 import type { BaseLayer } from "./layers/base-layer";
 
 /**
@@ -163,10 +166,8 @@ export class Rink {
    * Create or update the SVG element
    */
   private createSVG(): d3.Selection<SVGSVGElement, unknown, null, undefined> {
-    // Remove existing SVG if present
     this.container.select("svg").remove();
 
-    // Create new SVG
     const svg = this.container
       .append("svg")
       .attr("width", this.config.width)
@@ -174,10 +175,32 @@ export class Rink {
       .attr("viewBox", `0 0 ${this.config.width} ${this.config.height}`)
       .attr("xmlns", "http://www.w3.org/2000/svg");
 
+    const defs = svg.append("defs");
+
+    const { scale, padding } = this.dimensions;
+    const { LENGTH, WIDTH, CORNER_RADIUS } = RINK_DIMENSIONS;
+    const rinkWidth = LENGTH * scale;
+    const rinkHeight = WIDTH * scale;
+    const cornerRadius = CORNER_RADIUS * scale;
+
+    defs
+      .append("clipPath")
+      .attr("id", "rink-clip")
+      .append("rect")
+      .attr("x", padding)
+      .attr("y", padding)
+      .attr("width", rinkWidth)
+      .attr("height", rinkHeight)
+      .attr("rx", cornerRadius)
+      .attr("ry", cornerRadius);
+
     // Create main group for all rink elements
     svg.append("g").attr("class", "rink-group");
 
-    this.layersGroup = svg.append("g").attr("class", "layers-group");
+    this.layersGroup = svg
+      .append("g")
+      .attr("class", "layers-group")
+      .attr("clip-path", "url(#rink-clip)");
 
     return svg;
   }
@@ -262,6 +285,7 @@ export class Rink {
    * Add an event layer
    */
   addEvents(data: HockeyEvent[], config?: Partial<EventLayerConfig>): this {
+    // TODO : this should take generic not hockeyevent
     const layerConfig: EventLayerConfig = {
       id: config?.id || "event",
       ...config,
@@ -269,6 +293,22 @@ export class Rink {
 
     const shotLayer = new EventLayer(data, layerConfig);
     return this.addLayer(shotLayer);
+  }
+
+  /**
+   * Add a hexbin layer
+   */
+  addHexbin<TData = any>(
+    data: TData[],
+    config?: Partial<HexbinLayerConfig<TData>>,
+  ): this {
+    const layerConfig: HexbinLayerConfig<TData> = {
+      id: config?.id || "hexbin-layer",
+      ...config,
+    };
+
+    const layer = new HexbinLayer(data, layerConfig);
+    return this.addLayer(layer);
   }
 
   /**

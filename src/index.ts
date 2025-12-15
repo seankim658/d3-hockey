@@ -4,6 +4,8 @@
  * A comprehensive, extensible library for creating beautiful hockey visualizations
  */
 
+import { HexbinLayer } from "./components/layers/hexbin-layer";
+
 export const version = "0.1.0";
 
 export {
@@ -132,6 +134,9 @@ export type { BaseLayerConfig } from "./components/layers/base-layer";
 
 export { EventLayer } from "./components/layers/event-layer";
 export type { EventLayerConfig } from "./components/layers/event-layer";
+
+export { HexbinLayer } from "./components/layers/hexbin-layer";
+export type { HexbinLayerConfig } from "./components/layers/hexbin-layer";
 
 export { LayerManager } from "./components/layers/layer-manager";
 

@@ -47,6 +47,7 @@ export default defineConfig({
           items: [
             { text: "Basic Rink", link: "/examples/basic-rink" },
             { text: "Shot Charts", link: "/examples/shot-charts" },
+            { text: "Hexbin Charts", link: "/examples/hexbin-layer" },
           ],
         },
         {

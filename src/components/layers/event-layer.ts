@@ -1,9 +1,5 @@
 /* eslint-disable  @typescript-eslint/no-explicit-any */
 
-/**
- * Event layer for rendering hockey events (shots, hits, faceoffs, etc.)
- */
-
 import * as d3 from "d3";
 import { BaseLayer, BaseLayerConfig } from "./base-layer";
 import type {
