@@ -526,5 +526,3 @@ import {
 ## Version
 
 Current documentation is for d3-hockey v0.1.0.
-
-For changelog and migration guides, see [Changelog](/changelog).

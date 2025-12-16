@@ -146,14 +146,4 @@ new Rink("#rink").render().addEvents(shots, { id: "shots" });
 
 Now that you've created your first visualization, explore these topics:
 
-- [Core Concepts](/guide/core-concepts) - Understand the layer system
-- [Creating a Rink](/guide/creating-a-rink) - All rink configuration options
-- [Working with Layers](/guide/working-with-layers) - Layer types and customization
-- [Advanced Customization](/examples/advanced-customization) - Master the customRender hook
 - [Examples](/examples/) - See more visualization patterns
-
-## Need Help?
-
-- Check out the [Examples](/examples/) for common patterns
-- Read the [API Reference](/api/) for detailed documentation
-- [Open an issue](https://github.com/seankim658/d3-hockey/issues) on GitHub
