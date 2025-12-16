@@ -26,18 +26,7 @@ export default defineConfig({
       "/guide/": [
         {
           text: "Getting Started",
-          items: [
-            { text: "Introduction", link: "/guide/getting-started" },
-            { text: "Installation", link: "/guide/installation" },
-            { text: "Core Concepts", link: "/guide/core-concepts" },
-          ],
-        },
-        {
-          text: "Components",
-          items: [
-            { text: "Rink Configuration", link: "/guide/rink-configuration" },
-            { text: "Working with Layers", link: "/guide/working-with-layers" },
-          ],
+          items: [{ text: "Introduction", link: "/guide/getting-started" }],
         },
       ],
       "/examples/": [
