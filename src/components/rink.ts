@@ -444,7 +444,7 @@ export class Rink {
     const isOffensive = this.config.halfRinkEnd === "offensive";
     const sign = isOffensive ? 1 : -1;
 
-    this.drawCenterLine(group);
+    //this.drawCenterLine(group);
 
     const blueLineX = sign * RINK_DIMENSIONS.BLUE_LINE_OFFSET;
     this.drawBlueLine(group, blueLineX);
@@ -467,7 +467,7 @@ export class Rink {
     this.drawFaceoffDot(group, faceoffX, -22, "zone-bottom");
     this.drawFaceoffDot(group, sign * 20, 22, "neutral-top");
     this.drawFaceoffDot(group, sign * 20, -22, "neutral-bottom");
-    this.drawFaceoffDot(group, 0, 0, "center", this.config.colors.centerSpot);
+    //this.drawFaceoffDot(group, 0, 0, "center", this.config.colors.centerSpot);
 
     const creaseX = goalLineX;
     this.drawGoalCrease(group, creaseX, 0, isOffensive ? "right" : "left");
