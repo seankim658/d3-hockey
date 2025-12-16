@@ -7,9 +7,35 @@ import type {
   RenderDimensions,
   HockeyEventSymbolType,
   AnimationEasing,
-  CustomRenderContext,
 } from "../../types";
+import {
+  defaultXAccessor,
+  defaultYAccessor,
+  defaultEventTypeAccessor,
+} from "../../utils/accessor-utils";
+import { getEasingFunction } from "../../utils/easing-utils";
+import {
+  showTooltip,
+  moveTooltip,
+  hideTooltip,
+} from "../../utils/tooltip-utils";
 import { SYMBOL_PATHS } from "../../constants";
+
+/**
+ * Context provided to customRender callback.
+ */
+export interface EventRenderContext<TData = unknown, TLayer = unknown> {
+  position: {
+    svgX: number;
+    svgY: number;
+    dataX: number;
+    dataY: number;
+  };
+  data: TData;
+  index: number;
+  container: SVGGElement;
+  layer: TLayer;
+}
 
 /**
  * Configuration for event layer rendering
@@ -30,6 +56,11 @@ export interface EventLayerConfig<TData = any> extends BaseLayerConfig {
   showTooltip?: boolean;
   tooltip?: Accessor<TData, string>;
 
+  // Interaction callbacks
+  onClick?: (event: MouseEvent, data: TData, index: number) => void;
+  onHover?: (event: MouseEvent, data: TData, index: number) => void;
+  onMouseOut?: (event: MouseEvent, data: TData, index: number) => void;
+
   // Animation control
   animate?: boolean;
   animationDuration?: number;
@@ -43,7 +74,7 @@ export interface EventLayerConfig<TData = any> extends BaseLayerConfig {
   customRender?: (
     selection: d3.Selection<SVGElement, TData, SVGGElement, unknown>,
     dimensions: RenderDimensions,
-    context: CustomRenderContext<TData, EventLayer<TData>>,
+    context: EventRenderContext<TData, EventLayer<TData>>,
   ) => void;
   customAttributes?: {
     [key: string]: string | number | Accessor<TData, string | number>;
@@ -62,13 +93,6 @@ export class EventLayer<TData = any> extends BaseLayer<
   TData,
   EventLayerConfig<TData>
 > {
-  private static sharedTooltip: d3.Selection<
-    HTMLDivElement,
-    unknown,
-    HTMLElement,
-    unknown
-  > | null = null;
-
   constructor(data: TData[], config: EventLayerConfig<TData>) {
     super(data, config);
   }
@@ -84,9 +108,9 @@ export class EventLayer<TData = any> extends BaseLayer<
       opacity: 1,
       className: "event-layer",
       zIndex: 0,
-      x: EventLayer.defaultXAccessor,
-      y: EventLayer.defaultYAccessor,
-      eventType: EventLayer.defaultEventTypeAccessor,
+      x: defaultXAccessor,
+      y: defaultYAccessor,
+      eventType: defaultEventTypeAccessor,
       // Event layer defaults
       radius: 4,
       color: "#FF4C00",
@@ -94,6 +118,9 @@ export class EventLayer<TData = any> extends BaseLayer<
       strokeWidth: 1,
       showTooltip: true,
       tooltip: (d: TData) => this.defaultTooltip(d),
+      onClick: () => {},
+      onHover: () => {},
+      onMouseOut: () => {},
       animate: true,
       animationDuration: 300,
       animationEasing: "easeCubicInOut",
@@ -102,7 +129,7 @@ export class EventLayer<TData = any> extends BaseLayer<
       customRender: (() => {}) as (
         selection: d3.Selection<SVGElement, TData, SVGGElement, unknown>,
         dimensions: RenderDimensions,
-        context: CustomRenderContext<TData, EventLayer<TData>>,
+        context: EventRenderContext<TData, EventLayer<TData>>,
       ) => void,
       customAttributes: {},
       legendLabel: "",
@@ -125,40 +152,6 @@ export class EventLayer<TData = any> extends BaseLayer<
     return parts.join("<br/>");
   };
 
-  private static defaultXAccessor<T>(d: T): number {
-    if (d && typeof d === "object") {
-      const obj = d as any;
-      if ("details" in obj && obj.details?.xCoord != null)
-        return obj.details.xCoord;
-      if ("x" in obj && obj.x != null) return obj.x;
-      if ("coordinates" in obj && obj.coordinates?.x != null)
-        return obj.coordinates.x;
-    }
-    throw new Error("Cannot extract x coordinate");
-  }
-
-  private static defaultYAccessor<T>(d: T): number {
-    if (d && typeof d === "object") {
-      const obj = d as any;
-      if ("details" in obj && obj.details?.yCoord != null)
-        return obj.details.yCoord;
-      if ("y" in obj && obj.y != null) return obj.y;
-      if ("coordinates" in obj && obj.coordinates?.y != null)
-        return obj.coordinates.y;
-    }
-    throw new Error("Cannot extract y coordinate");
-  }
-
-  private static defaultEventTypeAccessor<T>(d: T): string | null {
-    if (!d || typeof d !== "object") return null;
-    const obj = d as any;
-    if (obj.typeDescKey) return obj.typeDescKey;
-    if (obj.type) return obj.type;
-    if (obj.eventType) return obj.eventType;
-    if (obj.event) return obj.event;
-    return null;
-  }
-
   private getX(d: TData, i: number = 0): number {
     return this.config.x!(d, i);
   }
@@ -179,32 +172,6 @@ export class EventLayer<TData = any> extends BaseLayer<
     dimensions: RenderDimensions,
   ): void {
     super.initialize(parent, dimensions);
-
-    if (this.config.showTooltip) {
-      this.createTooltip();
-    }
-  }
-
-  /**
-   * Create tooltip element
-   */
-  private createTooltip(): void {
-    if (!EventLayer.sharedTooltip || EventLayer.sharedTooltip.empty()) {
-      EventLayer.sharedTooltip = d3
-        .select<HTMLElement, unknown>("body")
-        .append("div")
-        .attr("class", "d3-hockey-tooltip")
-        .style("position", "absolute")
-        .style("visibility", "hidden")
-        .style("background-color", "rgba(0, 0, 0, 0.8)")
-        .style("color", "#fff")
-        .style("padding", "8px 12px")
-        .style("border-radius", "4px")
-        .style("font-size", "12px")
-        .style("pointer-events", "none")
-        .style("z-index", "1000")
-        .style("box-shadow", "0 2px 4px rgba(0,0,0,0.2)");
-    }
   }
 
   /**
@@ -252,10 +219,7 @@ export class EventLayer<TData = any> extends BaseLayer<
         return String(obj.id ?? obj.eventId ?? `event-${i}`);
       });
 
-    const positionMap = new Map<
-      TData,
-      CustomRenderContext<TData>["position"]
-    >();
+    const positionMap = new Map<TData, EventRenderContext<TData>["position"]>();
 
     const enter = symbols
       .enter()
@@ -282,7 +246,7 @@ export class EventLayer<TData = any> extends BaseLayer<
       .style("cursor", this.config.showTooltip ? "pointer" : "default");
 
     this.applyCustomAttributes(enter);
-    this.addTooltipInteractions(enter);
+    this.addInteractions(enter);
 
     if (this.hasCustomRender()) {
       enter.each((d, i, nodes) => {
@@ -290,7 +254,7 @@ export class EventLayer<TData = any> extends BaseLayer<
         const position = positionMap.get(d)!;
         const container = node.parentNode as SVGGElement;
 
-        const context: CustomRenderContext<TData, EventLayer<TData>> = {
+        const context: EventRenderContext<TData, EventLayer<TData>> = {
           position,
           data: d,
           index: i,
@@ -315,7 +279,7 @@ export class EventLayer<TData = any> extends BaseLayer<
       enter
         .transition()
         .duration(this.config.animationDuration)
-        .ease(this.getEasing())
+        .ease(getEasingFunction(this.config.animationEasing))
         .attr("transform", (d, i) => {
           const x = this.getX(d, i);
           const y = this.getY(d, i);
@@ -331,13 +295,13 @@ export class EventLayer<TData = any> extends BaseLayer<
       });
     }
 
-    this.addTooltipInteractions(symbols);
+    this.addInteractions(symbols);
 
     if (this.config.animate) {
       symbols
         .transition()
         .duration(this.config.animationDuration)
-        .ease(this.getEasing())
+        .ease(getEasingFunction(this.config.animationEasing))
         .attr("d", (d, i) => this.getSymbolPath(d, i))
         .attr("transform", (d, i) => {
           const x = this.getX(d, i);
@@ -365,7 +329,7 @@ export class EventLayer<TData = any> extends BaseLayer<
         .exit()
         .transition()
         .duration(this.config.animationDuration)
-        .ease(this.getEasing())
+        .ease(getEasingFunction(this.config.animationEasing))
         .attr("transform", (d, i) => {
           const x = this.getX(d as TData, i);
           const y = this.getY(d as TData, i);
@@ -475,36 +439,36 @@ export class EventLayer<TData = any> extends BaseLayer<
   /**
    * Add tooltip interactions to selection
    */
-  private addTooltipInteractions<T extends SVGElement>(
+  private addInteractions<T extends SVGElement>(
     selection: d3.Selection<T, TData, SVGGElement, unknown>,
   ): void {
-    if (this.config.showTooltip && EventLayer.sharedTooltip) {
-      selection
-        .on("mouseover", (event, d) => {
-          this.showTooltip(event, d);
-        })
-        .on("mousemove", (event) => this.moveTooltip(event))
-        .on("mouseout", () => this.hideTooltip());
-    }
-  }
+    selection
+      .on("mouseover", (event: MouseEvent, d: TData) => {
+        const index = this.data.indexOf(d);
 
-  /**
-   * Get D3 easing function from config
-   */
-  private getEasing(): (t: number) => number {
-    const easingName = this.config.animationEasing;
+        if (this.config.showTooltip) {
+          const content = this.config.tooltip(d, index);
+          showTooltip(event, content);
+        }
+        this.config.onHover(event, d, index);
+      })
+      .on("mousemove", (event: MouseEvent) => {
+        if (this.config.showTooltip) {
+          moveTooltip(event);
+        }
+      })
+      .on("mouseout", (event: MouseEvent, d: TData) => {
+        const index = this.data.indexOf(d);
 
-    type EasingFunction = (normalizedTime: number) => number;
-    type D3WithEasing = typeof d3 & Record<string, EasingFunction | unknown>;
-
-    const easingFn = (d3 as D3WithEasing)[easingName];
-
-    if (typeof easingFn === "function") {
-      return easingFn as EasingFunction;
-    }
-
-    console.warn(`Invalid easing function: ${easingName}. Using easeLinear.`);
-    return d3.easeLinear;
+        if (this.config.showTooltip) {
+          hideTooltip();
+        }
+        this.config.onMouseOut(event, d, index);
+      })
+      .on("click", (event: MouseEvent, d: TData) => {
+        const index = this.data.indexOf(d);
+        this.config.onClick(event, d, index);
+      });
   }
 
   /**
@@ -523,36 +487,6 @@ export class EventLayer<TData = any> extends BaseLayer<
     return typeof this.config.stroke === "function"
       ? this.config.stroke(d, i)
       : this.config.stroke;
-  }
-
-  /**
-   * Show tooltip for an event
-   */
-  private showTooltip(event: MouseEvent, d: TData): void {
-    if (!EventLayer.sharedTooltip) return;
-
-    const content = this.config.tooltip(d, 0);
-    EventLayer.sharedTooltip.html(content).style("visibility", "visible");
-    this.moveTooltip(event);
-  }
-
-  /**
-   * Move tooltip to mouse position
-   */
-  private moveTooltip(event: MouseEvent): void {
-    if (!EventLayer.sharedTooltip) return;
-
-    EventLayer.sharedTooltip
-      .style("top", `${event.pageY - 10}px`)
-      .style("left", `${event.pageX + 10}px`);
-  }
-
-  /**
-   * Hide tooltip
-   */
-  private hideTooltip(): void {
-    if (!EventLayer.sharedTooltip) return;
-    EventLayer.sharedTooltip.style("visibility", "hidden");
   }
 
   /**

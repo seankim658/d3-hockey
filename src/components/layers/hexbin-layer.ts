@@ -3,8 +3,49 @@
 import * as d3 from "d3";
 import { hexbin, type HexbinBin } from "d3-hexbin";
 import { BaseLayer, BaseLayerConfig } from "./base-layer";
+import { defaultXAccessor, defaultYAccessor } from "../../utils/accessor-utils";
+import {
+  showTooltip,
+  moveTooltip,
+  hideTooltip,
+} from "../../utils/tooltip-utils";
+import { getEasingFunction } from "../../utils/easing-utils";
 import { Accessor, RenderDimensions, AnimationEasing } from "../../types";
 import { HOCKEY_COLOR_SCALES } from "../../utils/color-utils";
+
+/**
+ * Aggregation function type for custom aggregations
+ */
+export type AggregationFunction<TData> = (
+  values: number[],
+  dataPoints: TData[],
+) => number;
+
+/**
+ * Built-in aggregation types
+ */
+export type BuiltInAggregation =
+  | "count"
+  | "mean"
+  | "sum"
+  | "min"
+  | "max"
+  | "median";
+
+/**
+ * Context passed to customRender function
+ */
+export interface HexbinRenderContext<TData> {
+  bin: HexbinBin<[number, number, TData]>;
+  value: number;
+  index: number;
+  position: {
+    svgX: number;
+    svgY: number;
+  };
+  container: SVGGElement;
+  layer: HexbinLayer<TData>;
+}
 
 /**
  * Configuration for Hexbin Layer
@@ -20,16 +61,18 @@ export interface HexbinLayerConfig<TData> extends BaseLayerConfig {
 
   // Aggregation Logic
   value?: Accessor<TData, number>;
-  aggregation?: "count" | "mean" | "sum";
+  aggregation?: BuiltInAggregation | AggregationFunction<TData>;
 
   // Visuals
   colorScale?: d3.ScaleSequential<string> | d3.ScaleLinear<string, string>;
-  stroke?: string | ((bin: HexbinBin<TData>, i: number) => string);
+  stroke?:
+    | string
+    | ((bin: HexbinBin<[number, number, TData]>, i: number) => string);
   strokeWidth?: number;
 
   // Tooltip
   showTooltip?: boolean;
-  tooltip?: (bin: HexbinBin<TData>, value: number) => string;
+  tooltip?: (bin: HexbinBin<[number, number, TData]>, value: number) => string;
 
   // Animation
   animate?: boolean;
@@ -37,25 +80,44 @@ export interface HexbinLayerConfig<TData> extends BaseLayerConfig {
   animationEasing?: AnimationEasing;
 
   // Interaction
-  onClick?: (event: MouseEvent, bin: HexbinBin<TData>) => void;
-  onHover?: (event: MouseEvent, bin: HexbinBin<TData>) => void;
+  onClick?: (
+    event: MouseEvent,
+    bin: HexbinBin<[number, number, TData]>,
+    value: number,
+  ) => void;
+  onHover?: (
+    event: MouseEvent,
+    bin: HexbinBin<[number, number, TData]>,
+    value: number,
+  ) => void;
+  onMouseOut?: (
+    event: MouseEvent,
+    bin: HexbinBin<[number, number, TData]>,
+    value: number,
+  ) => void;
 
   // Advanced Customization
   customRender?: (
     selection: d3.Selection<
       SVGPathElement,
-      HexbinBin<TData>,
+      HexbinBin<[number, number, TData]>,
       SVGGElement,
       unknown
     >,
     dimensions: RenderDimensions,
-    context: {
-      bin: HexbinBin<TData>;
-      x: number;
-      y: number;
-      value: number;
-    },
+    context: HexbinRenderContext<TData>,
   ) => void;
+
+  customAttributes?: {
+    [key: string]:
+      | string
+      | number
+      | ((
+          bin: HexbinBin<[number, number, TData]>,
+          value: number,
+          index: number,
+        ) => string | number);
+  };
 }
 
 /**
@@ -65,41 +127,31 @@ export class HexbinLayer<TData = any> extends BaseLayer<
   TData,
   HexbinLayerConfig<TData>
 > {
-  private static sharedTooltip: d3.Selection<
-    HTMLDivElement,
-    unknown,
-    HTMLElement,
-    unknown
-  > | null = null;
-
   /**
-   * Standardized X Accessor
+   * Get aggregation function from config (handles built-in or custom)
    */
-  private static defaultXAccessor<T>(d: T): number {
-    if (d && typeof d === "object") {
-      const obj = d as any;
-      if ("details" in obj && obj.details?.xCoord != null)
-        return obj.details.xCoord; // Raw NHL API
-      if ("x" in obj && obj.x != null) return obj.x; // Flat object
-      if ("coordinates" in obj && obj.coordinates?.x != null)
-        return obj.coordinates.x; // Standard HockeyEvent
-    }
-    throw new Error("Cannot extract x coordinate from data point");
-  }
+  private getAggregationFn(): AggregationFunction<TData> {
+    const { aggregation } = this.config;
 
-  /**
-   * Standardized Y Accessor
-   */
-  private static defaultYAccessor<T>(d: T): number {
-    if (d && typeof d === "object") {
-      const obj = d as any;
-      if ("details" in obj && obj.details?.yCoord != null)
-        return obj.details.yCoord;
-      if ("y" in obj && obj.y != null) return obj.y;
-      if ("coordinates" in obj && obj.coordinates?.y != null)
-        return obj.coordinates.y;
+    if (typeof aggregation === "function") {
+      return aggregation;
     }
-    throw new Error("Cannot extract y coordinate from data point");
+
+    switch (aggregation) {
+      case "mean":
+        return (values) => d3.mean(values) || 0;
+      case "sum":
+        return (values) => d3.sum(values) || 0;
+      case "min":
+        return (values) => d3.min(values) || 0;
+      case "max":
+        return (values) => d3.max(values) || 0;
+      case "median":
+        return (values) => d3.median(values) || 0;
+      case "count":
+      default:
+        return (values, dataPoints) => dataPoints.length;
+    }
   }
 
   protected getDefaults(): Required<HexbinLayerConfig<TData>> {
@@ -112,8 +164,8 @@ export class HexbinLayer<TData = any> extends BaseLayer<
       className: "hexbin-layer",
 
       // Standardized Data Defaults
-      x: HexbinLayer.defaultXAccessor,
-      y: HexbinLayer.defaultYAccessor,
+      x: defaultXAccessor,
+      y: defaultYAccessor,
 
       // Hexbin specific defaults
       radius: 4, // 4 feet radius for grid
@@ -138,9 +190,11 @@ export class HexbinLayer<TData = any> extends BaseLayer<
       // Interaction
       onClick: () => {},
       onHover: () => {},
+      onMouseOut: () => {},
 
       // Custom
       customRender: () => {},
+      customAttributes: {},
     };
   }
 
@@ -149,39 +203,18 @@ export class HexbinLayer<TData = any> extends BaseLayer<
     dimensions: RenderDimensions,
   ): void {
     super.initialize(parent, dimensions);
-    if (this.config.showTooltip) {
-      this.createTooltip();
-    }
-  }
-
-  private createTooltip(): void {
-    if (!HexbinLayer.sharedTooltip || HexbinLayer.sharedTooltip.empty()) {
-      HexbinLayer.sharedTooltip = d3
-        .select<HTMLElement, unknown>("body")
-        .append("div")
-        .attr("class", "d3-hockey-tooltip hexbin-tooltip")
-        .style("position", "absolute")
-        .style("visibility", "hidden")
-        .style("background-color", "rgba(0, 0, 0, 0.9)")
-        .style("color", "#fff")
-        .style("padding", "8px 12px")
-        .style("border-radius", "4px")
-        .style("font-size", "12px")
-        .style("pointer-events", "none")
-        .style("z-index", "1000")
-        .style("box-shadow", "0 4px 6px rgba(0,0,0,0.3)");
-    }
   }
 
   render(): void {
-    if (!this.group) return;
+    if (!this.group) {
+      throw new Error("HexbinLayer not initialized. Call initialize() first.");
+    }
 
     const { scale, width, height } = this.dimensions;
     const {
       radius,
       radiusScale: rScaleRange,
       colorScale,
-      aggregation,
       stroke,
       strokeWidth,
       opacity,
@@ -220,19 +253,13 @@ export class HexbinLayer<TData = any> extends BaseLayer<
     const bins = hexbinGenerator(points);
 
     // 3. Calculate Aggregate Values per Bin
-    // We attach the calculated value to the bin array for easy access later
-    const binValues = new Map<HexbinBin<TData>, number>();
+    const binValues = new Map<HexbinBin<[number, number, TData]>, number>();
+    const aggregationFn = this.getAggregationFn();
 
     bins.forEach((bin) => {
-      const values = bin.map((p) => this.config.value(p[2], 0));
-      let val = 0;
-      if (aggregation === "mean") {
-        val = d3.mean(values) || 0;
-      } else if (aggregation === "sum") {
-        val = d3.sum(values) || 0;
-      } else {
-        val = bin.length; // Default count
-      }
+      const dataPoints = bin.map((p) => p[2]);
+      const values = dataPoints.map((d, i) => this.config.value(d, i));
+      const val = aggregationFn(values, dataPoints);
       binValues.set(bin, val);
     });
 
@@ -244,9 +271,7 @@ export class HexbinLayer<TData = any> extends BaseLayer<
     if (domain[0] === undefined) domain[0] = 0;
     if (domain[1] === undefined) domain[1] = 0;
 
-    const activeColorScale = colorScale.copy()
-      ? (colorScale as any).copy().domain(domain)
-      : colorScale.domain(domain);
+    const activeColorScale = colorScale.copy().domain(domain);
 
     // If radius scaling is enabled (range is not [0,0]), setup that scale
     let activeRadiusScale: d3.ScaleLinear<number, number> | null = null;
@@ -259,10 +284,10 @@ export class HexbinLayer<TData = any> extends BaseLayer<
     }
 
     // 5. Render Hexagons using D3 Join
-    const easing = (d3 as any)[animationEasing] || d3.easeCubicOut;
+    const easing = getEasingFunction(animationEasing);
 
     // Helper to generate path
-    const getPath = (d: HexbinBin<TData>) => {
+    const getPath = (d: HexbinBin<[number, number, TData]>) => {
       if (activeRadiusScale) {
         const val = binValues.get(d) || 0;
         return hexbinGenerator.hexagon(activeRadiusScale(val));
@@ -278,7 +303,7 @@ export class HexbinLayer<TData = any> extends BaseLayer<
       .enter()
       .append("path")
       .attr("class", "hexbin-cell")
-      .attr("transform", (d) => `translate(${d.x},${d.y}) scale(0)`)
+      .attr("transform", (d: any) => `translate(${d.x},${d.y}) scale(0)`)
       .attr("fill", (d) => activeColorScale(binValues.get(d)!))
       .attr("stroke", (d, i) =>
         typeof stroke === "function" ? stroke(d, i) : stroke,
@@ -291,15 +316,31 @@ export class HexbinLayer<TData = any> extends BaseLayer<
     this.addInteractions(enter, binValues);
     this.addInteractions(paths, binValues);
 
-    // Run Custom Render if provided
-    if (this.config.customRender) {
+    if (this.hasCustomRender()) {
       enter.each((d, i, nodes) => {
-        this.config.customRender!(d3.select(nodes[i]), this.dimensions, {
+        const node = nodes[i];
+        const context: HexbinRenderContext<TData> = {
           bin: d,
-          x: d.x,
-          y: d.y,
           value: binValues.get(d) || 0,
-        });
+          index: i,
+          position: {
+            svgX: d.x,
+            svgY: d.y,
+          },
+          container: node.parentNode as SVGGElement,
+          layer: this,
+        };
+
+        this.config.customRender!(
+          d3.select(node) as unknown as d3.Selection<
+            SVGPathElement,
+            HexbinBin<[number, number, TData]>,
+            SVGGElement,
+            unknown
+          >,
+          this.dimensions,
+          context,
+        );
       });
     }
 
@@ -325,7 +366,7 @@ export class HexbinLayer<TData = any> extends BaseLayer<
         .transition()
         .duration(animationDuration)
         .ease(easing)
-        .attr("transform", (d) => `translate(${d.x},${d.y}) scale(0)`)
+        .attr("transform", (d: any) => `translate(${d.x},${d.y}) scale(0)`)
         .remove();
     } else {
       enter
@@ -342,58 +383,111 @@ export class HexbinLayer<TData = any> extends BaseLayer<
     }
   }
 
-  private addInteractions(
-    selection: d3.Selection<SVGPathElement, HexbinBin<TData>, any, any>,
-    valueMap: Map<HexbinBin<TData>, number>,
-  ) {
-    if (this.config.showTooltip) {
-      selection
-        .on("mouseover", (event, d) => {
-          const val = valueMap.get(d) || 0;
-          this.showTooltip(event, d, val);
-          this.config.onHover(event, d);
-          d3.select(event.currentTarget).raise(); // Bring to front
-        })
-        .on("mousemove", (event) => this.moveTooltip(event))
-        .on("mouseout", (event, d) => {
-          this.hideTooltip();
-        })
-        .on("click", (event, d) => this.config.onClick(event, d));
-    }
+  /**
+   * Check if customRender is defined and not the default empty function
+   */
+  private hasCustomRender(): boolean {
+    const defaultRender = this.getDefaults().customRender;
+    return (
+      this.config.customRender !== undefined &&
+      this.config.customRender !== defaultRender
+    );
   }
 
-  private defaultTooltip(bin: HexbinBin<TData>, value: number): string {
+  /**
+   * Apply custom attributes to selection
+   */
+  private applyCustomAttributes(
+    selection: d3.Selection<
+      SVGPathElement,
+      HexbinBin<[number, number, TData]>,
+      SVGGElement,
+      unknown
+    >,
+    valueMap: Map<HexbinBin<[number, number, TData]>, number>,
+  ): void {
+    const { customAttributes } = this.config;
+
+    if (!customAttributes || Object.keys(customAttributes).length === 0) {
+      return;
+    }
+
+    Object.entries(customAttributes).forEach(([key, value]) => {
+      if (typeof value === "function") {
+        selection.attr(key, (d, i) => value(d, valueMap.get(d) || 0, i));
+      } else {
+        selection.attr(key, value);
+      }
+    });
+  }
+
+  private addInteractions(
+    selection: d3.Selection<
+      SVGPathElement,
+      HexbinBin<[number, number, TData]>,
+      SVGGElement,
+      unknown
+    >,
+    binValues: Map<HexbinBin<[number, number, TData]>, number>,
+  ): void {
+    selection
+      .on(
+        "mouseover",
+        (event: MouseEvent, bin: HexbinBin<[number, number, TData]>) => {
+          const value = binValues.get(bin) || 0;
+          if (this.config.showTooltip) {
+            const content = this.config.tooltip(bin, value);
+            showTooltip(event, content);
+          }
+          this.config.onHover(event, bin, value);
+        },
+      )
+      .on("mousemove", (event: MouseEvent) => {
+        if (this.config.showTooltip) {
+          moveTooltip(event);
+        }
+      })
+      .on(
+        "mouseout",
+        (event: MouseEvent, bin: HexbinBin<[number, number, TData]>) => {
+          const value = binValues.get(bin) || 0;
+          if (this.config.showTooltip) {
+            hideTooltip();
+          }
+          this.config.onMouseOut(event, bin, value);
+        },
+      )
+      .on(
+        "click",
+        (event: MouseEvent, bin: HexbinBin<[number, number, TData]>) => {
+          const value = binValues.get(bin) || 0;
+          this.config.onClick(event, bin, value);
+        },
+      );
+  }
+
+  private defaultTooltip(
+    bin: HexbinBin<[number, number, TData]>,
+    value: number,
+  ): string {
     const { aggregation } = this.config;
-    let label = "Count";
-    if (aggregation === "mean") label = "Average";
-    if (aggregation === "sum") label = "Sum";
+    let label = "Value";
+
+    if (typeof aggregation === "string") {
+      const labels: Record<BuiltInAggregation, string> = {
+        count: "Count",
+        mean: "Average",
+        sum: "Sum",
+        min: "Minimum",
+        max: "Maximum",
+        median: "Median",
+      };
+      label = labels[aggregation] || "Value";
+    }
 
     return `
-        <strong>${label}:</strong> ${value.toFixed(2)}<br/>
-        <span style="font-size: 0.9em; color: #ccc">${bin.length} events</span>
-      `;
-  }
-
-  private showTooltip(
-    event: MouseEvent,
-    bin: HexbinBin<TData>,
-    value: number,
-  ): void {
-    if (!HexbinLayer.sharedTooltip) return;
-    const content = this.config.tooltip(bin, value);
-    HexbinLayer.sharedTooltip.html(content).style("visibility", "visible");
-    this.moveTooltip(event);
-  }
-
-  private moveTooltip(event: MouseEvent): void {
-    if (!HexbinLayer.sharedTooltip) return;
-    HexbinLayer.sharedTooltip
-      .style("top", `${event.pageY - 10}px`)
-      .style("left", `${event.pageX + 10}px`);
-  }
-
-  private hideTooltip(): void {
-    if (!HexbinLayer.sharedTooltip) return;
-    HexbinLayer.sharedTooltip.style("visibility", "hidden");
+      <strong>${label}:</strong> ${value.toFixed(2)}<br/>
+      <span style="font-size: 0.9em; color: #ccc">${bin.length} events</span>
+    `;
   }
 }

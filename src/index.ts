@@ -4,8 +4,6 @@
  * A comprehensive, extensible library for creating beautiful hockey visualizations
  */
 
-import { HexbinLayer } from "./components/layers/hexbin-layer";
-
 export const version = "0.1.0";
 
 export {
@@ -27,12 +25,8 @@ export type {
   RinkConfig,
   RinkColors,
   RenderDimensions,
-  LayerType,
-  LayerEventHandler,
-  LayerEventType,
   HockeyEventSymbolType,
   AnimationEasing,
-  CustomRenderContext,
 } from "./types";
 
 export type {
@@ -133,14 +127,17 @@ export { BaseLayer } from "./components/layers/base-layer";
 export type { BaseLayerConfig } from "./components/layers/base-layer";
 
 export { EventLayer } from "./components/layers/event-layer";
-export type { EventLayerConfig } from "./components/layers/event-layer";
+export type {
+  EventLayerConfig,
+  EventRenderContext,
+} from "./components/layers/event-layer";
 
 export { HexbinLayer } from "./components/layers/hexbin-layer";
-export type { HexbinLayerConfig } from "./components/layers/hexbin-layer";
+export type {
+  HexbinLayerConfig,
+  HexbinRenderContext,
+  AggregationFunction,
+  BuiltInAggregation,
+} from "./components/layers/hexbin-layer";
 
 export { LayerManager } from "./components/layers/layer-manager";
-
-// TODO : Temporary test function
-export function hello(): string {
-  return "Hello from d3-hockey! Foundation layer ready.";
-}

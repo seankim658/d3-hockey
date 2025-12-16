@@ -284,15 +284,17 @@ export class Rink {
   /**
    * Add an event layer
    */
-  addEvents(data: HockeyEvent[], config?: Partial<EventLayerConfig>): this {
-    // TODO : this should take generic not hockeyevent
-    const layerConfig: EventLayerConfig = {
+  addEvents<TData = any>(
+    data: TData[],
+    config?: Partial<EventLayerConfig<TData>>,
+  ): this {
+    const layerConfig: EventLayerConfig<TData> = {
       id: config?.id || "event",
       ...config,
     };
 
-    const shotLayer = new EventLayer(data, layerConfig);
-    return this.addLayer(shotLayer);
+    const eventLayer = new EventLayer(data, layerConfig);
+    return this.addLayer(eventLayer);
   }
 
   /**
@@ -344,7 +346,7 @@ export class Rink {
   /**
    * Update a layer's data
    */
-  updateLayer(id: string, data: HockeyEvent[]): this {
+  updateLayer<TData = unknown>(id: string, data: TData[]): this {
     if (this.layerManager) {
       const layer = this.layerManager.getLayer(id);
       if (layer) {
