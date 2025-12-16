@@ -151,6 +151,7 @@ color: colorByTeam("teamAbbrev", { colorType: "secondary" });
 <script setup> 
 
 import { onMounted } from 'vue'
+import { withBase } from 'vitepress'
 
 onMounted(async () => {
 
@@ -162,7 +163,7 @@ onMounted(async () => {
   const rink = new Rink(container);
   
   try { 
-    const response = await fetch('/data/game-2022020195.json');
+    const response = await fetch(withBase('/data/game-2022020195.json'));
     if (!response.ok) {
       throw new Error(`Failed to load local data: ${response.statusText}`);
     }

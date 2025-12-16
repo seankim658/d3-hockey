@@ -74,7 +74,9 @@ new Rink("#container").render().addHexbin(shots, {
 ```
 
 <script setup>
+
 import { onMounted } from 'vue'
+import { withBase } from 'vitepress'
 
 onMounted(async () => {
   // Dynamic imports ensure client-side execution in VitePress
@@ -85,7 +87,7 @@ onMounted(async () => {
   // We handle the fetch error gracefully just in case
   let shots = [];
   try {
-    const response = await fetch('/data/game-2022020195.json');
+    const response = await fetch(withBase('/data/game-2022020195.json'));
     if (response.ok) {
       const gameData = await response.json();
       // Initialize manager and extract just the shot events
