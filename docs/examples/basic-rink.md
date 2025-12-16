@@ -43,11 +43,11 @@ new Rink("#container")
 
 ## Half Rink
 
-Render just the offensive or defensive zone for focused analysis.
+Render just the offensive or defensive zone horizontally.
 
 <ClientOnly>
-  <Demo title="Half Rink (Offensive)">
-    <div id="half-rink-demo" style="width: 100%; display: flex; justify-content: center;"></div>
+  <Demo title="Half Rink (Horizontal)">
+    <div id="half-rink-horizontal-demo" style="width: 100%; display: flex; justify-content: center;"></div>
   </Demo>
 </ClientOnly>
 
@@ -56,8 +56,27 @@ import { Rink } from "d3-hockey";
 
 new Rink("#container")
   .width(600)
-  .height(340)
-  .halfRink(true, "offensive") // TODO : or "defensive"
+  .height(540)
+  .halfRink(true, "offensive")
+  .render();
+```
+
+Render just the offensive or defensive zone vertically.
+
+<ClientOnly>
+  <Demo title="Half Rink (Vertical)">
+    <div id="half-rink-vertical-demo" style="width: 100%; display: flex; justify-content: center;"></div>
+  </Demo>
+</ClientOnly>
+
+```typescript
+import { Rink } from "d3-hockey";
+
+new Rink("#container")
+  .width(600)
+  .height(540)
+  .halfRink(true, "offensive")
+  .vertical(true)
   .render();
 ```
 
@@ -102,13 +121,25 @@ onMounted(async () => {
         })
         .render()
     }
+
+    // Half rink
+    const halfHorContainer = document.getElementById('half-rink-horizontal-demo')
+    if (halfHorContainer) {
+      new Rink(halfHorContainer)
+      .width(600)
+      .height(540)
+      .halfRink(true, "offensive")
+      .render();
+    }
     
-    // TODO Half Rink
-    const halfContainer = document.getElementById('half-rink-demo')
-    if (halfContainer) {
-      new Rink(halfContainer)
-        .halfRink(true, 'offensive')
-        .render()
+    const halfVerContainer = document.getElementById('half-rink-vertical-demo')
+    if (halfVerContainer) {
+      new Rink(halfVerContainer)
+      .width(600)
+      .height(540)
+      .halfRink(true, "offensive")
+      .vertical(true)
+      .render();
     }
 
     // Custom Sizing

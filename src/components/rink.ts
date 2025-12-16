@@ -14,12 +14,7 @@ import {
   LINE_WIDTHS,
 } from "../constants";
 import { calculateScale } from "../utils/coordinates";
-import type {
-  RinkConfig,
-  RinkColors,
-  RenderDimensions,
-  HockeyEvent,
-} from "../types";
+import type { RinkConfig, RinkColors, RenderDimensions } from "../types";
 import { LayerManager } from "./layers/layer-manager";
 import { EventLayer, EventLayerConfig } from "./layers/event-layer";
 import { HexbinLayer, HexbinLayerConfig } from "./layers/hexbin-layer";
@@ -27,12 +22,6 @@ import type { BaseLayer } from "./layers/base-layer";
 
 /**
  * Rink class for rendering hockey rinks
- *
- * Usage:
- *   const rink = new Rink('#container')
- *     .width(1000)
- *     .height(500)
- *     .render();
  */
 export class Rink {
   private container: d3.Selection<HTMLElement, unknown, null, undefined>;
@@ -90,6 +79,7 @@ export class Rink {
       this.config.height,
       this.config.padding,
       this.config.halfRink,
+      this.config.vertical,
     );
   }
 
@@ -135,6 +125,7 @@ export class Rink {
    */
   vertical(value: boolean): this {
     this.config.vertical = value;
+    this.updateDimensions();
     return this;
   }
 
@@ -155,6 +146,7 @@ export class Rink {
       this.config.height,
       this.config.padding,
       this.config.halfRink,
+      this.config.vertical,
     );
 
     if (this.layerManager) {
@@ -179,30 +171,172 @@ export class Rink {
 
     const { scale, padding } = this.dimensions;
     const { LENGTH, WIDTH, CORNER_RADIUS } = RINK_DIMENSIONS;
-    const rinkWidth = LENGTH * scale;
-    const rinkHeight = WIDTH * scale;
+
+    const rinkLengthFt = this.config.halfRink ? LENGTH / 2 : LENGTH;
+    const rinkLengthPx = rinkLengthFt * scale;
+    const rinkWidthPx = WIDTH * scale;
     const cornerRadius = CORNER_RADIUS * scale;
 
-    defs
-      .append("clipPath")
-      .attr("id", "rink-clip")
-      .append("rect")
-      .attr("x", padding)
-      .attr("y", padding)
-      .attr("width", rinkWidth)
-      .attr("height", rinkHeight)
-      .attr("rx", cornerRadius)
-      .attr("ry", cornerRadius);
+    const svgCenterX = this.config.width / 2;
+    const svgCenterY = this.config.height / 2;
+    const rinkCenterX = padding + rinkLengthPx / 2;
+    const rinkCenterY = padding + rinkWidthPx / 2;
 
-    // Create main group for all rink elements
-    svg.append("g").attr("class", "rink-group");
+    const clipPath = defs.append("clipPath").attr("id", "rink-clip");
 
-    this.layersGroup = svg
-      .append("g")
-      .attr("class", "layers-group")
-      .attr("clip-path", "url(#rink-clip)");
+    if (this.config.vertical) {
+      const clipX = svgCenterX - rinkWidthPx / 2;
+      const clipY = svgCenterY - rinkLengthPx / 2;
+
+      if (this.config.halfRink) {
+        this.createVerticalHalfRinkClipPath(
+          clipPath,
+          rinkWidthPx,
+          rinkLengthPx,
+          cornerRadius,
+          clipX,
+          clipY,
+        );
+      } else {
+        clipPath
+          .append("rect")
+          .attr("x", clipX)
+          .attr("y", clipY)
+          .attr("width", rinkWidthPx)
+          .attr("height", rinkLengthPx)
+          .attr("rx", cornerRadius)
+          .attr("ry", cornerRadius);
+      }
+
+      const mainGroup = svg.append("g").attr("class", "rink-main-group");
+      mainGroup.attr(
+        "transform",
+        `translate(${svgCenterX}, ${svgCenterY}) rotate(-90) translate(${-rinkCenterX}, ${-rinkCenterY})`,
+      );
+      mainGroup.append("g").attr("class", "rink-group");
+      this.layersGroup = mainGroup
+        .append("g")
+        .attr("class", "layers-group")
+        .attr("clip-path", "url(#rink-clip)");
+    } else {
+      const clipX = svgCenterX - rinkLengthPx / 2;
+      const clipY = svgCenterY - rinkWidthPx / 2;
+
+      if (this.config.halfRink) {
+        this.createHalfRinkClipPath(
+          clipPath,
+          rinkLengthPx,
+          rinkWidthPx,
+          cornerRadius,
+          clipX,
+          clipY,
+        );
+      } else {
+        clipPath
+          .append("rect")
+          .attr("x", clipX)
+          .attr("y", clipY)
+          .attr("width", rinkLengthPx)
+          .attr("height", rinkWidthPx)
+          .attr("rx", cornerRadius)
+          .attr("ry", cornerRadius);
+      }
+
+      const mainGroup = svg.append("g").attr("class", "rink-main-group");
+      const dx = svgCenterX - rinkCenterX;
+      const dy = svgCenterY - rinkCenterY;
+      if (dx !== 0 || dy !== 0) {
+        mainGroup.attr("transform", `translate(${dx}, ${dy})`);
+      }
+      mainGroup.append("g").attr("class", "rink-group");
+      this.layersGroup = mainGroup
+        .append("g")
+        .attr("class", "layers-group")
+        .attr("clip-path", "url(#rink-clip)");
+    }
 
     return svg;
+  }
+
+  /**
+   * Create clip path for vertical half rink (rounded top or bottom)
+   */
+  private createVerticalHalfRinkClipPath(
+    clipPath: d3.Selection<SVGClipPathElement, unknown, null, undefined>,
+    width: number,
+    height: number,
+    cornerRadius: number,
+    x: number,
+    y: number,
+  ): void {
+    const isOffensive = this.config.halfRinkEnd === "offensive";
+
+    if (isOffensive) {
+      // Rounded top, flat bottom
+      const path = `
+      M ${x + cornerRadius} ${y}
+      L ${x + width - cornerRadius} ${y}
+      Q ${x + width} ${y} ${x + width} ${y + cornerRadius}
+      L ${x + width} ${y + height}
+      L ${x} ${y + height}
+      L ${x} ${y + cornerRadius}
+      Q ${x} ${y} ${x + cornerRadius} ${y}
+      Z
+    `;
+      clipPath.append("path").attr("d", path);
+    } else {
+      // Flat top, rounded bottom
+      const path = `
+      M ${x} ${y}
+      L ${x + width} ${y}
+      L ${x + width} ${y + height - cornerRadius}
+      Q ${x + width} ${y + height} ${x + width - cornerRadius} ${y + height}
+      L ${x + cornerRadius} ${y + height}
+      Q ${x} ${y + height} ${x} ${y + height - cornerRadius}
+      L ${x} ${y}
+      Z
+    `;
+      clipPath.append("path").attr("d", path);
+    }
+  }
+
+  /**
+   * Create clip path for half rink (one end rounded, one end flat)
+   */
+  private createHalfRinkClipPath(
+    clipPath: d3.Selection<SVGClipPathElement, unknown, null, undefined>,
+    rinkWidth: number,
+    rinkHeight: number,
+    cornerRadius: number,
+    x: number,
+    y: number,
+  ): void {
+    if (this.config.halfRinkEnd === "offensive") {
+      // Offensive end: flat left edge (center ice), rounded right corners
+      const path = `
+        M ${x} ${y}
+        L ${x + rinkWidth - cornerRadius} ${y}
+        Q ${x + rinkWidth} ${y} ${x + rinkWidth} ${y + cornerRadius}
+        L ${x + rinkWidth} ${y + rinkHeight - cornerRadius}
+        Q ${x + rinkWidth} ${y + rinkHeight} ${x + rinkWidth - cornerRadius} ${y + rinkHeight}
+        L ${x} ${y + rinkHeight}
+        Z
+      `;
+      clipPath.append("path").attr("d", path);
+    } else {
+      // Defensive end: rounded left corners, flat right edge (center ice)
+      const path = `
+        M ${x + cornerRadius} ${y}
+        L ${x + rinkWidth} ${y}
+        L ${x + rinkWidth} ${y + rinkHeight}
+        L ${x + cornerRadius} ${y + rinkHeight}
+        Q ${x} ${y + rinkHeight} ${x} ${y + rinkHeight - cornerRadius}
+        L ${x} ${y + cornerRadius}
+        Q ${x} ${y} ${x + cornerRadius} ${y}
+        Z
+      `;
+      clipPath.append("path").attr("d", path);
+    }
   }
 
   /**
@@ -226,10 +360,12 @@ export class Rink {
    * Get X coordinate in SVG space (from center-origin NHL coords)
    */
   private getX(nhlX: number): number {
-    return (
-      (nhlX + NHL_COORDS.MAX_X) * this.dimensions.scale +
-      this.dimensions.padding
-    );
+    const { scale, padding } = this.dimensions;
+    if (this.config.halfRink && this.config.halfRinkEnd === "offensive") {
+      return nhlX * scale + padding;
+    }
+
+    return (nhlX + NHL_COORDS.MAX_X) * scale + padding;
   }
 
   /**
@@ -243,6 +379,21 @@ export class Rink {
   }
 
   /**
+   * Get the rink dimensions in pixels based on current config
+   */
+  private getRinkPixelDimensions(): { width: number; height: number } {
+    const { scale } = this.dimensions;
+    const length = this.config.halfRink
+      ? RINK_DIMENSIONS.LENGTH / 2
+      : RINK_DIMENSIONS.LENGTH;
+
+    return {
+      width: length * scale,
+      height: RINK_DIMENSIONS.WIDTH * scale,
+    };
+  }
+
+  /**
    * Render the complete rink
    */
   render(): this {
@@ -250,6 +401,28 @@ export class Rink {
     const group = this.getRinkGroup();
 
     this.drawIceSurface(group);
+
+    if (this.config.halfRink) {
+      this.drawHalfRinkElements(group);
+    } else {
+      this.drawFullRinkElements(group);
+    }
+
+    this.drawBoards(group);
+
+    if (this.layersGroup) {
+      this.layerManager = new LayerManager(this.layersGroup, this.dimensions);
+    }
+
+    return this;
+  }
+
+  /**
+   * Draw all elements for a full rink
+   */
+  private drawFullRinkElements(
+    group: d3.Selection<SVGGElement, unknown, null, undefined>,
+  ): void {
     this.drawCenterLine(group);
     this.drawBlueLines(group);
     this.drawGoalLines(group);
@@ -260,13 +433,52 @@ export class Rink {
     this.drawFaceoffDots(group);
     this.drawGoalCreases(group);
     this.drawGoals(group);
-    this.drawBoards(group);
+  }
 
-    if (this.layersGroup) {
-      this.layerManager = new LayerManager(this.layersGroup, this.dimensions);
-    }
+  /**
+   * Draw all elements for a half rink
+   */
+  private drawHalfRinkElements(
+    group: d3.Selection<SVGGElement, unknown, null, undefined>,
+  ): void {
+    const isOffensive = this.config.halfRinkEnd === "offensive";
+    const sign = isOffensive ? 1 : -1;
 
-    return this;
+    this.drawCenterLine(group);
+
+    const blueLineX = sign * RINK_DIMENSIONS.BLUE_LINE_OFFSET;
+    this.drawBlueLine(group, blueLineX);
+
+    const goalLineX =
+      sign * (NHL_COORDS.MAX_X - RINK_DIMENSIONS.GOAL_LINE_OFFSET);
+    this.drawGoalLine(group, goalLineX);
+    this.drawTrapezoid(group, isOffensive ? "right" : "left");
+
+    this.drawHalfCenterCircle(group);
+
+    const faceoffX = sign * 69;
+    this.drawFaceoffCircle(group, faceoffX, 22);
+    this.drawFaceoffCircle(group, faceoffX, -22);
+
+    this.drawFaceoffHashSet(group, faceoffX, 22);
+    this.drawFaceoffHashSet(group, faceoffX, -22);
+
+    this.drawFaceoffDot(group, faceoffX, 22, "zone-top");
+    this.drawFaceoffDot(group, faceoffX, -22, "zone-bottom");
+    this.drawFaceoffDot(group, sign * 20, 22, "neutral-top");
+    this.drawFaceoffDot(group, sign * 20, -22, "neutral-bottom");
+    this.drawFaceoffDot(group, 0, 0, "center", this.config.colors.centerSpot);
+
+    const creaseX = goalLineX;
+    this.drawGoalCrease(group, creaseX, 0, isOffensive ? "right" : "left");
+    this.drawGoal(
+      group,
+      creaseX,
+      0,
+      isOffensive ? "right" : "left",
+      this.feetToPixels(RINK_DIMENSIONS.GOAL_WIDTH),
+      this.feetToPixels(RINK_DIMENSIONS.GOAL_DEPTH),
+    );
   }
 
   /**
@@ -370,56 +582,153 @@ export class Rink {
     group: d3.Selection<SVGGElement, unknown, null, undefined>,
   ): void {
     const { scale, padding } = this.dimensions;
-    const { LENGTH, WIDTH, CORNER_RADIUS } = RINK_DIMENSIONS;
+    const { width: rinkWidth, height: rinkHeight } =
+      this.getRinkPixelDimensions();
+    const cornerRadius = RINK_DIMENSIONS.CORNER_RADIUS * scale;
 
-    const rinkWidth = LENGTH * scale;
-    const rinkHeight = WIDTH * scale;
-    const cornerRadius = CORNER_RADIUS * scale;
-
-    const x = padding;
-    const y = padding;
-
-    group
-      .append("rect")
-      .attr("class", "ice-surface")
-      .attr("x", x)
-      .attr("y", y)
-      .attr("width", rinkWidth)
-      .attr("height", rinkHeight)
-      .attr("rx", cornerRadius)
-      .attr("ry", cornerRadius)
-      .attr("fill", this.config.colors.ice);
+    if (this.config.halfRink) {
+      this.drawHalfRinkShape(
+        group,
+        "ice-surface",
+        rinkWidth,
+        rinkHeight,
+        cornerRadius,
+        padding,
+        {
+          fill: this.config.colors.ice,
+        },
+      );
+    } else {
+      group
+        .append("rect")
+        .attr("class", "ice-surface")
+        .attr("x", padding)
+        .attr("y", padding)
+        .attr("width", rinkWidth)
+        .attr("height", rinkHeight)
+        .attr("rx", cornerRadius)
+        .attr("ry", cornerRadius)
+        .attr("fill", this.config.colors.ice);
+    }
   }
 
   /**
    * Draw the rink boards (outline)
-   * This is drawn last to cover line overflows
    */
   private drawBoards(
     group: d3.Selection<SVGGElement, unknown, null, undefined>,
   ): void {
     const { scale, padding } = this.dimensions;
-    const { LENGTH, WIDTH, CORNER_RADIUS } = RINK_DIMENSIONS;
+    const { width: rinkWidth, height: rinkHeight } =
+      this.getRinkPixelDimensions();
+    const cornerRadius = RINK_DIMENSIONS.CORNER_RADIUS * scale;
 
-    const rinkWidth = LENGTH * scale;
-    const rinkHeight = WIDTH * scale;
-    const cornerRadius = CORNER_RADIUS * scale;
+    if (this.config.halfRink) {
+      this.drawHalfRinkShape(
+        group,
+        "rink-boards",
+        rinkWidth,
+        rinkHeight,
+        cornerRadius,
+        padding,
+        {
+          fill: "none",
+          stroke: this.config.colors.boards,
+          strokeWidth: 2,
+        },
+      );
+    } else {
+      group
+        .append("rect")
+        .attr("class", "rink-boards")
+        .attr("x", padding)
+        .attr("y", padding)
+        .attr("width", rinkWidth)
+        .attr("height", rinkHeight)
+        .attr("rx", cornerRadius)
+        .attr("ry", cornerRadius)
+        .attr("fill", "none")
+        .attr("stroke", this.config.colors.boards)
+        .attr("stroke-width", 2);
+    }
+  }
 
+  /**
+   * Helper to draw half rink shape (used for ice and boards)
+   */
+  private drawHalfRinkShape(
+    group: d3.Selection<SVGGElement, unknown, null, undefined>,
+    className: string,
+    width: number,
+    height: number,
+    cornerRadius: number,
+    padding: number,
+    style: { fill?: string; stroke?: string; strokeWidth?: number },
+  ): void {
     const x = padding;
     const y = padding;
+    let path: string;
 
-    group
-      .append("rect")
-      .attr("class", "rink-boards")
-      .attr("x", x)
-      .attr("y", y)
-      .attr("width", rinkWidth)
-      .attr("height", rinkHeight)
-      .attr("rx", cornerRadius)
-      .attr("ry", cornerRadius)
-      .attr("fill", "none")
-      .attr("stroke", this.config.colors.boards)
-      .attr("stroke-width", 2);
+    // For boards (stroke only), use open path without center ice edge
+    const isBoards = style.fill === "none" && style.stroke;
+
+    if (this.config.halfRinkEnd === "offensive") {
+      if (isBoards) {
+        // Open path - no left edge (center ice)
+        path = `
+        M ${x} ${y}
+        L ${x + width - cornerRadius} ${y}
+        A ${cornerRadius} ${cornerRadius} 0 0 1 ${x + width} ${y + cornerRadius}
+        L ${x + width} ${y + height - cornerRadius}
+        A ${cornerRadius} ${cornerRadius} 0 0 1 ${x + width - cornerRadius} ${y + height}
+        L ${x} ${y + height}
+      `;
+      } else {
+        // Closed path for ice surface
+        path = `
+        M ${x} ${y}
+        L ${x + width - cornerRadius} ${y}
+        A ${cornerRadius} ${cornerRadius} 0 0 1 ${x + width} ${y + cornerRadius}
+        L ${x + width} ${y + height - cornerRadius}
+        A ${cornerRadius} ${cornerRadius} 0 0 1 ${x + width - cornerRadius} ${y + height}
+        L ${x} ${y + height}
+        Z
+      `;
+      }
+    } else {
+      if (isBoards) {
+        // Open path - no right edge (center ice)
+        path = `
+        M ${x + width} ${y}
+        L ${x + cornerRadius} ${y}
+        A ${cornerRadius} ${cornerRadius} 0 0 0 ${x} ${y + cornerRadius}
+        L ${x} ${y + height - cornerRadius}
+        A ${cornerRadius} ${cornerRadius} 0 0 0 ${x + cornerRadius} ${y + height}
+        L ${x + width} ${y + height}
+      `;
+      } else {
+        // Closed path for ice surface
+        path = `
+        M ${x + cornerRadius} ${y}
+        L ${x + width} ${y}
+        L ${x + width} ${y + height}
+        L ${x + cornerRadius} ${y + height}
+        A ${cornerRadius} ${cornerRadius} 0 0 1 ${x} ${y + height - cornerRadius}
+        L ${x} ${y + cornerRadius}
+        A ${cornerRadius} ${cornerRadius} 0 0 1 ${x + cornerRadius} ${y}
+        Z
+      `;
+      }
+    }
+
+    const element = group
+      .append("path")
+      .attr("class", className)
+      .attr("d", path);
+
+    if (style.fill) element.attr("fill", style.fill);
+    if (style.stroke) element.attr("stroke", style.stroke);
+    if (style.strokeWidth) element.attr("stroke-width", style.strokeWidth);
   }
 
   /**
@@ -450,29 +759,28 @@ export class Rink {
   private drawBlueLines(
     group: d3.Selection<SVGGElement, unknown, null, undefined>,
   ): void {
-    const lineWidth = this.feetToPixels(LINE_WIDTHS.BLUE_LINE);
     const offset = RINK_DIMENSIONS.BLUE_LINE_OFFSET;
+    this.drawBlueLine(group, -offset);
+    this.drawBlueLine(group, offset);
+  }
+
+  /**
+   * Draw a single blue line
+   */
+  private drawBlueLine(
+    group: d3.Selection<SVGGElement, unknown, null, undefined>,
+    nhlX: number,
+  ): void {
+    const lineWidth = this.feetToPixels(LINE_WIDTHS.BLUE_LINE);
     const y1 = this.getY(NHL_COORDS.MAX_Y);
     const y2 = this.getY(NHL_COORDS.MIN_Y);
 
-    // Left blue line
     group
       .append("line")
-      .attr("class", "blue-line-left")
-      .attr("x1", this.getX(-offset))
+      .attr("class", "blue-line")
+      .attr("x1", this.getX(nhlX))
       .attr("y1", y1)
-      .attr("x2", this.getX(-offset))
-      .attr("y2", y2)
-      .attr("stroke", this.config.colors.blueLine)
-      .attr("stroke-width", lineWidth);
-
-    // Right blue line
-    group
-      .append("line")
-      .attr("class", "blue-line-right")
-      .attr("x1", this.getX(offset))
-      .attr("y1", y1)
-      .attr("x2", this.getX(offset))
+      .attr("x2", this.getX(nhlX))
       .attr("y2", y2)
       .attr("stroke", this.config.colors.blueLine)
       .attr("stroke-width", lineWidth);
@@ -484,31 +792,44 @@ export class Rink {
   private drawGoalLines(
     group: d3.Selection<SVGGElement, unknown, null, undefined>,
   ): void {
-    const lineWidth = this.feetToPixels(LINE_WIDTHS.GOAL_LINE);
     const offset = NHL_COORDS.MAX_X - RINK_DIMENSIONS.GOAL_LINE_OFFSET;
+    this.drawGoalLine(group, -offset);
+    this.drawGoalLine(group, offset);
+  }
 
-    const trimDistance = 5.6;
+  /**
+   * Draw a single goal line
+   */
+  private drawGoalLine(
+    group: d3.Selection<SVGGElement, unknown, null, undefined>,
+    nhlX: number,
+  ): void {
+    const lineWidth = this.feetToPixels(LINE_WIDTHS.GOAL_LINE);
+
+    // Calculate trim based on where goal line intersects rounded corner
+    const cornerRadius = RINK_DIMENSIONS.CORNER_RADIUS; // 28 feet
+    const cornerCenterX = NHL_COORDS.MAX_X - cornerRadius; // 72 feet from center
+    const distFromCornerCenter = Math.abs(nhlX) - cornerCenterX;
+
+    let trimDistance = 0;
+    if (distFromCornerCenter > 0) {
+      // Goal line is in the corner curve region
+      const arcOffsetY = Math.sqrt(
+        cornerRadius * cornerRadius -
+          distFromCornerCenter * distFromCornerCenter,
+      );
+      trimDistance = cornerRadius - arcOffsetY;
+    }
+
     const y1 = this.getY(NHL_COORDS.MAX_Y - trimDistance);
     const y2 = this.getY(NHL_COORDS.MIN_Y + trimDistance);
 
-    // Left goal line
     group
       .append("line")
-      .attr("class", "goal-line-left")
-      .attr("x1", this.getX(-offset))
+      .attr("class", "goal-line")
+      .attr("x1", this.getX(nhlX))
       .attr("y1", y1)
-      .attr("x2", this.getX(-offset))
-      .attr("y2", y2)
-      .attr("stroke", this.config.colors.redLine)
-      .attr("stroke-width", lineWidth);
-
-    // Right goal line
-    group
-      .append("line")
-      .attr("class", "goal-line-right")
-      .attr("x1", this.getX(offset))
-      .attr("y1", y1)
-      .attr("x2", this.getX(offset))
+      .attr("x2", this.getX(nhlX))
       .attr("y2", y2)
       .attr("stroke", this.config.colors.redLine)
       .attr("stroke-width", lineWidth);
@@ -544,35 +865,80 @@ export class Rink {
   }
 
   /**
+   * Draw half center circle (semicircle at edge for half rink)
+   */
+  private drawHalfCenterCircle(
+    group: d3.Selection<SVGGElement, unknown, null, undefined>,
+  ): void {
+    const radius = this.feetToPixels(RINK_DIMENSIONS.CENTER_CIRCLE_RADIUS);
+    const lineWidth = this.feetToPixels(LINE_WIDTHS.FACEOFF_CIRCLE);
+
+    const cx = this.getX(0);
+    const cy = this.getY(0);
+
+    // For offensive half: draw right semicircle (from -90° to 90°)
+    // For defensive half: draw left semicircle (from 90° to 270°)
+    const isOffensive = this.config.halfRinkEnd === "offensive";
+    const startAngle = isOffensive ? -Math.PI / 2 : Math.PI / 2;
+    const endAngle = isOffensive ? Math.PI / 2 : (3 * Math.PI) / 2;
+
+    const startX = cx + radius * Math.cos(startAngle);
+    const startY = cy + radius * Math.sin(startAngle);
+    const endX = cx + radius * Math.cos(endAngle);
+    const endY = cy + radius * Math.sin(endAngle);
+
+    const sweepFlag = isOffensive ? 1 : 1;
+
+    group
+      .append("path")
+      .attr("class", "center-circle-half")
+      .attr(
+        "d",
+        `M ${startX} ${startY} A ${radius} ${radius} 0 0 ${sweepFlag} ${endX} ${endY}`,
+      )
+      .attr("fill", "none")
+      .attr("stroke", this.config.colors.blueLine)
+      .attr("stroke-width", lineWidth);
+  }
+
+  /**
    * Draw all faceoff circles
    */
   private drawFaceoffCircles(
     group: d3.Selection<SVGGElement, unknown, null, undefined>,
   ): void {
+    const positions: Array<[number, number]> = [
+      [69, 22],
+      [69, -22],
+      [-69, 22],
+      [-69, -22],
+    ];
+
+    positions.forEach(([x, y]) => {
+      this.drawFaceoffCircle(group, x, y);
+    });
+  }
+
+  /**
+   * Draw a single faceoff circle
+   */
+  private drawFaceoffCircle(
+    group: d3.Selection<SVGGElement, unknown, null, undefined>,
+    nhlX: number,
+    nhlY: number,
+  ): void {
     const radius = this.feetToPixels(RINK_DIMENSIONS.FACEOFF_CIRCLE_RADIUS);
     const lineWidth = this.feetToPixels(LINE_WIDTHS.FACEOFF_CIRCLE);
 
-    // Faceoff circle positions (X, Y in NHL coords)
-    const positions: Array<[number, number, string]> = [
-      // Offensive zone (right side)
-      [69, 22, "offensive-right-top"],
-      [69, -22, "offensive-right-bottom"],
-      // Defensive zone (left side)
-      [-69, 22, "defensive-left-top"],
-      [-69, -22, "defensive-left-bottom"],
-    ];
-
-    positions.forEach(([x, y, className]) => {
-      group
-        .append("circle")
-        .attr("class", `faceoff-circle ${className}`)
-        .attr("cx", this.getX(x))
-        .attr("cy", this.getY(y))
-        .attr("r", radius)
-        .attr("fill", "none")
-        .attr("stroke", this.config.colors.faceoff)
-        .attr("stroke-width", lineWidth);
-    });
+    group
+      .append("circle")
+      .attr("class", "faceoff-circle")
+      .attr("cx", this.getX(nhlX))
+      .attr("cy", this.getY(nhlY))
+      .attr("r", radius)
+      .attr("fill", "none")
+      .attr("stroke", this.config.colors.faceoff)
+      .attr("stroke-width", lineWidth);
   }
 
   /**
@@ -628,6 +994,26 @@ export class Rink {
   private drawFaceoffHashes(
     group: d3.Selection<SVGGElement, unknown, null, undefined>,
   ): void {
+    const positions: Array<[number, number]> = [
+      [69, 22],
+      [69, -22],
+      [-69, 22],
+      [-69, -22],
+    ];
+
+    positions.forEach(([nhlX, nhlY]) => {
+      this.drawFaceoffHashSet(group, nhlX, nhlY);
+    });
+  }
+
+  /**
+   * Draw hash marks for a single faceoff circle
+   */
+  private drawFaceoffHashSet(
+    group: d3.Selection<SVGGElement, unknown, null, undefined>,
+    nhlX: number,
+    nhlY: number,
+  ): void {
     const {
       FACEOFF_HASH_MAIN_LEG,
       FACEOFF_HASH_CROSS_LEG,
@@ -641,42 +1027,29 @@ export class Rink {
     const xOff_px = this.feetToPixels(FACEOFF_HASH_X_OFFSET);
     const yOff_px = this.feetToPixels(FACEOFF_HASH_Y_OFFSET);
 
-    // Same positions as faceoff circles
-    const positions: Array<[number, number]> = [
-      [69, 22],
-      [69, -22],
-      [-69, 22],
-      [-69, -22],
+    const cx = this.getX(nhlX);
+    const cy = this.getY(nhlY);
+
+    // Four 'L' shapes around the faceoff dot
+    const paths = [
+      // Top-left 'L'
+      `M ${cx - xOff_px} ${cy - yOff_px} L ${cx - xOff_px} ${cy - yOff_px - mainLeg_px} M ${cx - xOff_px} ${cy - yOff_px} L ${cx - xOff_px - crossLeg_px} ${cy - yOff_px}`,
+      // Top-right 'L'
+      `M ${cx + xOff_px} ${cy - yOff_px} L ${cx + xOff_px} ${cy - yOff_px - mainLeg_px} M ${cx + xOff_px} ${cy - yOff_px} L ${cx + xOff_px + crossLeg_px} ${cy - yOff_px}`,
+      // Bottom-left 'L'
+      `M ${cx - xOff_px} ${cy + yOff_px} L ${cx - xOff_px} ${cy + yOff_px + mainLeg_px} M ${cx - xOff_px} ${cy + yOff_px} L ${cx - xOff_px - crossLeg_px} ${cy + yOff_px}`,
+      // Bottom-right 'L'
+      `M ${cx + xOff_px} ${cy + yOff_px} L ${cx + xOff_px} ${cy + yOff_px + mainLeg_px} M ${cx + xOff_px} ${cy + yOff_px} L ${cx + xOff_px + crossLeg_px} ${cy + yOff_px}`,
     ];
 
-    const hashStroke = this.config.colors.faceoff;
-
-    positions.forEach(([nhlX, nhlY]) => {
-      const cx = this.getX(nhlX);
-      const cy = this.getY(nhlY);
-
-      // Define the 4 'L' paths for each circle
-      const paths = [
-        // Top-left 'L'
-        `M ${cx - xOff_px} ${cy - yOff_px} L ${cx - xOff_px} ${cy - yOff_px - mainLeg_px} M ${cx - xOff_px} ${cy - yOff_px} L ${cx - xOff_px - crossLeg_px} ${cy - yOff_px}`,
-        // Top-right 'L'
-        `M ${cx + xOff_px} ${cy - yOff_px} L ${cx + xOff_px} ${cy - yOff_px - mainLeg_px} M ${cx + xOff_px} ${cy - yOff_px} L ${cx + xOff_px + crossLeg_px} ${cy - yOff_px}`,
-        // Bottom-left 'L'
-        `M ${cx - xOff_px} ${cy + yOff_px} L ${cx - xOff_px} ${cy + yOff_px + mainLeg_px} M ${cx - xOff_px} ${cy + yOff_px} L ${cx - xOff_px - crossLeg_px} ${cy + yOff_px}`,
-        // Bottom-right 'L'
-        `M ${cx + xOff_px} ${cy + yOff_px} L ${cx + xOff_px} ${cy + yOff_px + mainLeg_px} M ${cx + xOff_px} ${cy + yOff_px} L ${cx + xOff_px + crossLeg_px} ${cy + yOff_px}`,
-      ];
-
-      // Append all 4 hash marks
-      paths.forEach((d) => {
-        group
-          .append("path")
-          .attr("class", "faceoff-hash")
-          .attr("d", d)
-          .attr("fill", "none")
-          .attr("stroke", hashStroke)
-          .attr("stroke-width", lineWidth);
-      });
+    paths.forEach((d) => {
+      group
+        .append("path")
+        .attr("class", "faceoff-hash")
+        .attr("d", d)
+        .attr("fill", "none")
+        .attr("stroke", this.config.colors.faceoff)
+        .attr("stroke-width", lineWidth);
     });
   }
 
@@ -763,7 +1136,6 @@ export class Rink {
     const goalDepth = this.feetToPixels(RINK_DIMENSIONS.GOAL_DEPTH);
 
     this.drawGoal(group, -goalLineOffset, 0, "left", goalWidth, goalDepth);
-
     this.drawGoal(group, goalLineOffset, 0, "right", goalWidth, goalDepth);
   }
 
@@ -846,47 +1218,42 @@ export class Rink {
   private drawTrapezoids(
     group: d3.Selection<SVGGElement, unknown, null, undefined>,
   ): void {
+    this.drawTrapezoid(group, "left");
+    this.drawTrapezoid(group, "right");
+  }
+
+  /**
+   * Draw a single trapezoid
+   */
+  private drawTrapezoid(
+    group: d3.Selection<SVGGElement, unknown, null, undefined>,
+    side: "left" | "right",
+  ): void {
     const {
       GOAL_LINE_OFFSET,
       GOAL_TRAPEZOID_GOAL_LINE_WIDTH,
       GOAL_TRAPEZOID_END_BOARD_WIDTH,
     } = RINK_DIMENSIONS;
 
-    const lineWidth = this.feetToPixels(LINE_WIDTHS.GOAL_LINE); // 2 inches
-    const goalLineX = NHL_COORDS.MAX_X - GOAL_LINE_OFFSET; // 89ft
-    const endBoardX = NHL_COORDS.MAX_X; // 100ft
-    const goalLineY = GOAL_TRAPEZOID_GOAL_LINE_WIDTH / 2; // 11ft
-    const endBoardY = GOAL_TRAPEZOID_END_BOARD_WIDTH / 2; // 14ft
+    const lineWidth = this.feetToPixels(LINE_WIDTHS.GOAL_LINE);
+    const goalLineX = NHL_COORDS.MAX_X - GOAL_LINE_OFFSET;
+    const endBoardX = NHL_COORDS.MAX_X;
+    const goalLineY = GOAL_TRAPEZOID_GOAL_LINE_WIDTH / 2;
+    const endBoardY = GOAL_TRAPEZOID_END_BOARD_WIDTH / 2;
 
-    // Right Trapezoid
-    const r_p1 = { x: this.getX(goalLineX), y: this.getY(goalLineY) };
-    const r_p2 = { x: this.getX(endBoardX), y: this.getY(endBoardY) };
-    const r_p3 = { x: this.getX(endBoardX), y: this.getY(-endBoardY) };
-    const r_p4 = { x: this.getX(goalLineX), y: this.getY(-goalLineY) };
+    const sign = side === "right" ? 1 : -1;
 
-    group
-      .append("path")
-      .attr("class", "trapezoid-right")
-      .attr(
-        "d",
-        `M ${r_p1.x} ${r_p1.y} L ${r_p2.x} ${r_p2.y} M ${r_p3.x} ${r_p3.y} L ${r_p4.x} ${r_p4.y}`,
-      )
-      .attr("fill", "none")
-      .attr("stroke", this.config.colors.redLine)
-      .attr("stroke-width", lineWidth);
-
-    // Left Trapezoid
-    const l_p1 = { x: this.getX(-goalLineX), y: this.getY(goalLineY) };
-    const l_p2 = { x: this.getX(-endBoardX), y: this.getY(endBoardY) };
-    const l_p3 = { x: this.getX(-endBoardX), y: this.getY(-endBoardY) };
-    const l_p4 = { x: this.getX(-goalLineX), y: this.getY(-goalLineY) };
+    const p1 = { x: this.getX(sign * goalLineX), y: this.getY(goalLineY) };
+    const p2 = { x: this.getX(sign * endBoardX), y: this.getY(endBoardY) };
+    const p3 = { x: this.getX(sign * endBoardX), y: this.getY(-endBoardY) };
+    const p4 = { x: this.getX(sign * goalLineX), y: this.getY(-goalLineY) };
 
     group
       .append("path")
-      .attr("class", "trapezoid-left")
+      .attr("class", `trapezoid-${side}`)
       .attr(
         "d",
-        `M ${l_p1.x} ${l_p1.y} L ${l_p2.x} ${l_p2.y} M ${l_p3.x} ${l_p3.y} L ${l_p4.x} ${l_p4.y}`,
+        `M ${p1.x} ${p1.y} L ${p2.x} ${p2.y} M ${p3.x} ${p3.y} L ${p4.x} ${p4.y}`,
       )
       .attr("fill", "none")
       .attr("stroke", this.config.colors.redLine)

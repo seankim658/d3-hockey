@@ -48,7 +48,6 @@ export function svgToNHL(
 
 /**
  * Flip coordinates based on period
- * In hockey, teams switch ends each period, so coordinates need to be flipped
  *
  * @param coord - NHL API coordinate
  * @param period - Period number (1, 2, 3, etc.)
@@ -61,19 +60,51 @@ export function flipCoordinatesByPeriod(
   flipOddPeriods: boolean = false,
 ): NHLCoordinate {
   // Determine if we should flip based on period
-  const shouldFlip = flipOddPeriods
-    ? period % 2 === 1 // Flip in periods 1, 3, 5...
-    : period % 2 === 0; // Flip in periods 2, 4, 6...
+  const shouldFlip = flipOddPeriods ? period % 2 === 1 : period % 2 === 0;
 
   if (!shouldFlip) {
     return coord;
   }
 
-  // Flip both X and Y coordinates
   return {
     x: -coord.x,
     y: -coord.y,
   };
+}
+
+/**
+ * Normalize coordinate to offensive zone (positive x)
+ * Useful for half-rink visualizations where all shots should appear
+ * on the same side regardless of which period they occurred in.
+ *
+ * @param coord - NHL API coordinate
+ * @returns Coordinate with x always positive (offensive zone)
+ */
+export function normalizeToOffensiveZone(coord: NHLCoordinate): NHLCoordinate {
+  if (coord.x < 0) {
+    return {
+      x: -coord.x,
+      y: -coord.y,
+    };
+  }
+  return coord;
+}
+
+/**
+ * Normalize coordinate to defensive zone (negative x)
+ * For visualizations from the goalie's perspective.
+ *
+ * @param coord - NHL API coordinate
+ * @returns Coordinate with x always negative (defensive zone)
+ */
+export function normalizeToDefensiveZone(coord: NHLCoordinate): NHLCoordinate {
+  if (coord.x > 0) {
+    return {
+      x: -coord.x,
+      y: -coord.y,
+    };
+  }
+  return coord;
 }
 
 /**
@@ -98,6 +129,7 @@ export function normalizeCoordinate(coord: NHLCoordinate): NHLCoordinate {
  * @param height - SVG height in pixels
  * @param padding - Padding in pixels
  * @param halfRink - Whether rendering half rink
+ * @param vertical - Whether rendering in vertical orientation
  * @returns Object with scale factor and adjusted dimensions
  */
 export function calculateScale(
@@ -105,6 +137,7 @@ export function calculateScale(
   height: number,
   padding: number,
   halfRink: boolean = false,
+  vertical: boolean = false,
 ): RenderDimensions {
   const availableWidth = width - 2 * padding;
   const availableHeight = height - 2 * padding;
@@ -114,11 +147,14 @@ export function calculateScale(
     : RINK_DIMENSIONS.LENGTH;
   const rinkWidth = RINK_DIMENSIONS.WIDTH;
 
-  // Calculate scale to fit rink in available space
-  const scaleX = availableWidth / rinkLength;
-  const scaleY = availableHeight / rinkWidth;
+  // For vertical orientation, swap the dimensions we're fitting
+  const targetWidth = vertical ? rinkWidth : rinkLength;
+  const targetHeight = vertical ? rinkLength : rinkWidth;
 
-  // Use the smaller scale to ensure rink fits
+  // Calculate scale to fit rink in available space
+  const scaleX = availableWidth / targetWidth;
+  const scaleY = availableHeight / targetHeight;
+
   const scale = Math.min(scaleX, scaleY);
 
   return {
@@ -168,4 +204,94 @@ export function getZone(
   }
 
   return "neutral";
+}
+
+/**
+ * Check if a coordinate is within a specified zone
+ *
+ * @param coord - NHL API coordinate
+ * @param zone - Zone to check
+ * @param offensiveZonePositive - Whether positive X is offensive zone
+ * @returns True if coordinate is in the specified zone
+ */
+export function isInZone(
+  coord: NHLCoordinate,
+  zone: "offensive" | "defensive" | "neutral",
+  offensiveZonePositive: boolean = true,
+): boolean {
+  return getZone(coord, offensiveZonePositive) === zone;
+}
+
+/**
+ * Get the distance to the nearest goal
+ *
+ * @param coord - NHL API coordinate
+ * @returns Distance to the nearest goal in feet
+ */
+export function getDistanceToNearestGoal(coord: NHLCoordinate): number {
+  const goalX = NHL_COORDS.MAX_X - RINK_DIMENSIONS.GOAL_LINE_OFFSET; // 89 feet
+
+  const distanceToRight = getDistance(coord, { x: goalX, y: 0 });
+  const distanceToLeft = getDistance(coord, { x: -goalX, y: 0 });
+
+  return Math.min(distanceToRight, distanceToLeft);
+}
+
+/**
+ * Get the angle to the goal from a coordinate
+ *
+ * @param coord - NHL API coordinate
+ * @param toOffensiveGoal - Whether to calculate angle to offensive goal (positive x)
+ * @returns Angle in degrees (0 = straight on, 90 = from the side)
+ */
+export function getAngleToGoal(
+  coord: NHLCoordinate,
+  toOffensiveGoal: boolean = true,
+): number {
+  const goalX = NHL_COORDS.MAX_X - RINK_DIMENSIONS.GOAL_LINE_OFFSET; // 89 feet
+  const targetX = toOffensiveGoal ? goalX : -goalX;
+
+  const dx = targetX - coord.x;
+  const dy = coord.y; // Goal is at y=0
+
+  // Calculate angle from the horizontal axis
+  const angleRad = Math.atan2(Math.abs(dy), Math.abs(dx));
+  const angleDeg = angleRad * (180 / Math.PI);
+
+  return angleDeg;
+}
+
+/**
+ * Check if a coordinate is within the rink bounds
+ *
+ * @param coord - NHL API coordinate
+ * @returns True if coordinate is within valid rink bounds
+ */
+export function isWithinRink(coord: NHLCoordinate): boolean {
+  return (
+    coord.x >= NHL_COORDS.MIN_X &&
+    coord.x <= NHL_COORDS.MAX_X &&
+    coord.y >= NHL_COORDS.MIN_Y &&
+    coord.y <= NHL_COORDS.MAX_Y
+  );
+}
+
+/**
+ * Check if a coordinate is visible in the half rink view
+ *
+ * @param coord - NHL API coordinate
+ * @param halfRinkEnd - Which end is being displayed
+ * @param buffer - Buffer zone around center ice (default: 5 feet)
+ * @returns True if coordinate would be visible
+ */
+export function isVisibleInHalfRink(
+  coord: NHLCoordinate,
+  halfRinkEnd: "offensive" | "defensive",
+  buffer: number = 5,
+): boolean {
+  if (halfRinkEnd === "offensive") {
+    return coord.x >= -buffer;
+  } else {
+    return coord.x <= buffer;
+  }
 }
