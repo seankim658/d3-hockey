@@ -134,30 +134,12 @@ class MyCustomLayer extends BaseLayer {
 d3-hockey has built-in support for NHL API data:
 
 ```typescript
-import { Rink, parseNHLAPIResponse, flipCoordinatesByPeriod } from "d3-hockey";
+import { Rink, NHLDataManager } from "d3-hockey";
 
-// Fetch NHL data
-const response = await fetch(
-  "https://api-web.nhle.com/v1/gamecenter/2023020001/play-by-play",
-);
-const data = await response.json();
+const manager = await NHLDataManager.fromGameId("2023020001");
+const shots = manager.getAllEvents({ shotsOnly: true });
 
-// Parse events with location data
-const events = parseNHLAPIResponse(data);
-
-// Handle coordinate flipping for different periods
-const normalizedEvents = events.map((event) => ({
-  ...event,
-  coordinates: flipCoordinatesByPeriod(
-    { x: event.coordinates.x, y: event.coordinates.y },
-    event.period || 1,
-  ),
-}));
-
-// Create visualization
-new Rink("#rink").render().addEvents(normalizedEvents, {
-  id: "nhl-events",
-});
+new Rink("#rink").render().addEvents(shots, { id: "shots" });
 ```
 
 ## Next Steps

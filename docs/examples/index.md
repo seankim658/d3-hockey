@@ -10,46 +10,27 @@ Learn how to render a hockey rink with different configurations and styling opti
 
 ### [Shot Charts](/examples/shot-charts)
 
-Visualize shot data with customizable markers, colors, and styles.
+Visualize shot (or other event) data with customizable markers, colors, and styles.
 
-### [Heatmaps](/examples/heatmaps)
+### [Hexbin Charts](/examples/hexbin-layer)
 
-Create density maps and hexbin aggregations to show shooting patterns.
-
-### [Team Colors](/examples/team-colors)
-
-Use the built-in NHL team color palette to create team-specific visualizations.
+Create density maps and hexbin aggregations to show event patterns.
 
 ## Advanced Examples
 
 ### [Advanced Customization](/examples/advanced-customization)
 
-Master the `customRender` hook to create sophisticated visualizations with player labels, speed rings, custom interactions, composite elements, and more.
+Use the `customRender` hook to create sophisticated visualizations with player labels, speed rings, custom interactions, composite elements, and more.
 
-### [Interactive Visualizations](/examples/interactive)
+### [NHL API Data](/examples/nhl-api-data)
 
-Add tooltips, click handlers, and zoom functionality to your charts.
-
-### [Custom Symbols](/examples/custom-symbols)
-
-Use custom SVG symbols to represent different event types.
-
-### [Multiple Periods](/examples/multiple-periods)
-
-Handle period-based coordinate flipping and animate period transitions.
+Work with real NHL API data using the built-in `NHLDataManager` and parsing utilities.
 
 ## Coming Soon
 
-More examples are being added regularly. Check back soon for:
+More examples are being added. Check back soon for:
 
+- Interactive visualizations (zoom)
 - Player tracking visualization
 - Zone entry/exit charts
 - Passing networks
-- Time series animations
-- Real-time game visualizations
-
----
-
-::: tip
-All examples are also available in the `examples/` directory of the GitHub repository. You can run them locally to experiment with the code.
-:::
