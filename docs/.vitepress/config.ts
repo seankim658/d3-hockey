@@ -16,7 +16,6 @@ export default defineConfig({
       {
         text: "v0.1.0",
         items: [
-          { text: "Changelog", link: "/changelog" },
           { text: "GitHub", link: "https://github.com/seankim658/d3-hockey" },
         ],
       },
@@ -53,15 +52,27 @@ export default defineConfig({
       "/api/": [
         {
           text: "API Reference",
+          items: [{ text: "Overview", link: "/api/" }],
+        },
+        {
+          text: "Core",
           items: [
-            { text: "Overview", link: "/api/" },
             { text: "Rink", link: "/api/rink" },
-            { text: "EventLayer", link: "/api/event-layer" },
-            { text: "BaseLayer", link: "/api/base-layer" },
-            { text: "LayerManager", link: "/api/layer-manager" },
-            { text: "Utilities", link: "/api/utilities" },
             { text: "Types", link: "/api/types" },
           ],
+        },
+        {
+          text: "Layers",
+          items: [
+            { text: "EventLayer", link: "/api/event-layer" },
+            { text: "HexbinLayer", link: "/api/hexbin-layer" },
+            { text: "BaseLayer", link: "/api/base-layer" },
+            { text: "LayerManager", link: "/api/layer-manager" },
+          ],
+        },
+        {
+          text: "Utilities",
+          items: [{ text: "Utilities", link: "/api/utilities" }],
         },
       ],
     },
