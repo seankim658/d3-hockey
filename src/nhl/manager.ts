@@ -1,7 +1,7 @@
 import type { HockeyEvent } from "../types";
 import type { NHLPlayByPlayResponse, NHLPlayerInfo } from "./types";
 import { parseNHLPlayByPlay, type ParseOptions } from "./parser";
-import { flipCoordinatesByPeriod } from "../utils/coordinates";
+import { flipCoordinatesByPeriod } from "../utils/coordinate-utils";
 import { getTeamColors, type TeamColors } from "../utils/color-utils";
 
 export interface FetchOptions {

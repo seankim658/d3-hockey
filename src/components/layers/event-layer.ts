@@ -13,6 +13,7 @@ import {
   defaultYAccessor,
   defaultEventTypeAccessor,
 } from "../../utils/accessor-utils";
+import { nhlToSVG } from "../../utils/coordinate-utils";
 import { getEasingFunction } from "../../utils/easing-utils";
 import {
   showTooltip,
@@ -229,7 +230,7 @@ export class EventLayer<TData = any> extends BaseLayer<
       .attr("transform", (d, i) => {
         const dataX = this.getX(d, i);
         const dataY = this.getY(d, i);
-        const pos = this.nhlToSVG({ x: dataX, y: dataY });
+        const pos = nhlToSVG({ x: dataX, y: dataY }, this.dimensions);
 
         positionMap.set(d, {
           svgX: pos.x,
@@ -283,14 +284,14 @@ export class EventLayer<TData = any> extends BaseLayer<
         .attr("transform", (d, i) => {
           const x = this.getX(d, i);
           const y = this.getY(d, i);
-          const pos = this.nhlToSVG({ x, y });
+          const pos = nhlToSVG({ x, y }, this.dimensions);
           return `translate(${pos.x},${pos.y}) scale(1)`;
         });
     } else {
       enter.attr("transform", (d, i) => {
         const x = this.getX(d, i);
         const y = this.getY(d, i);
-        const pos = this.nhlToSVG({ x, y });
+        const pos = nhlToSVG({ x, y }, this.dimensions);
         return `translate(${pos.x},${pos.y}) scale(1)`;
       });
     }
@@ -306,7 +307,7 @@ export class EventLayer<TData = any> extends BaseLayer<
         .attr("transform", (d, i) => {
           const x = this.getX(d, i);
           const y = this.getY(d, i);
-          const pos = this.nhlToSVG({ x, y });
+          const pos = nhlToSVG({ x, y }, this.dimensions);
           return `translate(${pos.x},${pos.y}) scale(1)`;
         })
         .attr("fill", this.getColor.bind(this))
@@ -317,7 +318,7 @@ export class EventLayer<TData = any> extends BaseLayer<
         .attr("transform", (d, i) => {
           const x = this.getX(d, i);
           const y = this.getY(d, i);
-          const pos = this.nhlToSVG({ x, y });
+          const pos = nhlToSVG({ x, y }, this.dimensions);
           return `translate(${pos.x},${pos.y}) scale(1)`;
         })
         .attr("fill", this.getColor.bind(this))
@@ -333,7 +334,7 @@ export class EventLayer<TData = any> extends BaseLayer<
         .attr("transform", (d, i) => {
           const x = this.getX(d as TData, i);
           const y = this.getY(d as TData, i);
-          const pos = this.nhlToSVG({ x, y });
+          const pos = nhlToSVG({ x, y }, this.dimensions);
           return `translate(${pos.x},${pos.y}) scale(0)`;
         })
         .remove();

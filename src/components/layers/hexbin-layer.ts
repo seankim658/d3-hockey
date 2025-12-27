@@ -11,6 +11,7 @@ import {
 } from "../../utils/tooltip-utils";
 import { getEasingFunction } from "../../utils/easing-utils";
 import { Accessor, RenderDimensions, AnimationEasing } from "../../types";
+import { nhlToSVG } from "../../utils/coordinate-utils";
 import { HOCKEY_COLOR_SCALES } from "../../utils/color-utils";
 
 /**
@@ -210,7 +211,7 @@ export class HexbinLayer<TData = any> extends BaseLayer<
       throw new Error("HexbinLayer not initialized. Call initialize() first.");
     }
 
-    const { scale, width, height } = this.dimensions;
+    const { scale, width, height, padding } = this.dimensions;
     const {
       radius,
       radiusScale: rScaleRange,
@@ -230,7 +231,7 @@ export class HexbinLayer<TData = any> extends BaseLayer<
           const nhlX = this.config.x(d, i);
           const nhlY = this.config.y(d, i);
 
-          const svgPos = this.nhlToSVG({ x: nhlX, y: nhlY });
+          const svgPos = nhlToSVG({ x: nhlX, y: nhlY }, this.dimensions);
           return [svgPos.x, svgPos.y, d] as [number, number, TData];
         } catch {
           return null;
@@ -246,8 +247,8 @@ export class HexbinLayer<TData = any> extends BaseLayer<
       .y((d) => d[1])
       .radius(hexRadiusPx)
       .extent([
-        [0, 0],
-        [width, height],
+        [padding, padding],
+        [width - padding, height - padding],
       ]);
 
     const bins = hexbinGenerator(points);
