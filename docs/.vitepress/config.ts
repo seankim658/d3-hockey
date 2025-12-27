@@ -35,6 +35,7 @@ export default defineConfig({
           items: [
             { text: "Basic Rink", link: "/examples/basic-rink" },
             { text: "Shot Charts", link: "/examples/shot-charts" },
+            { text: "Heatmap Charts", link: "/examples/heatmap-layer" },
             { text: "Hexbin Charts", link: "/examples/hexbin-layer" },
           ],
         },
@@ -65,6 +66,7 @@ export default defineConfig({
           text: "Layers",
           items: [
             { text: "EventLayer", link: "/api/event-layer" },
+            { text: "HeatmapLayer", link: "/api/heatmap-layer" },
             { text: "HexbinLayer", link: "/api/hexbin-layer" },
             { text: "BaseLayer", link: "/api/base-layer" },
             { text: "LayerManager", link: "/api/layer-manager" },

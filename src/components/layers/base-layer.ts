@@ -6,7 +6,7 @@
  */
 
 import * as d3 from "d3";
-import type { RenderDimensions, NHLCoordinate } from "../../types";
+import type { RenderDimensions } from "../../types";
 
 /**
  * Base configuration for all layers
@@ -161,15 +161,5 @@ export abstract class BaseLayer<
    */
   getGroup(): d3.Selection<SVGGElement, unknown, null, undefined> | null {
     return this.group;
-  }
-
-  /**
-   * Convert NHL coordinate to SVG coordinate
-   */
-  protected nhlToSVG(coord: NHLCoordinate): { x: number; y: number } {
-    const { scale, padding } = this.dimensions;
-    const x = (coord.x + 100) * scale + padding;
-    const y = (42.5 - coord.y) * scale + padding;
-    return { x, y };
   }
 }

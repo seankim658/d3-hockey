@@ -73,13 +73,25 @@ export const HOCKEY_COLOR_SCALES = {
   shotQuality: d3.scaleSequential(d3.interpolateYlOrRd).domain([0, 1]),
 
   // Heat map (blue to red)
-  heatmap: d3.scaleSequential(d3.interpolateRdYlBu).domain([1, 0]),
+  heatmap: d3.scaleSequential(interpolateHeatmapVibrant).domain([1, 0]),
 
   // Performance (bad to good)
   performance: d3.scaleSequential(d3.interpolateRdYlGn).domain([0, 1]),
 
   // Diverging (centered at 0)
   diverging: d3.scaleDiverging(d3.interpolateRdBu).domain([-1, 0, 1]),
+
+  // Ice-themed cool colors (for subtle overlays)
+  ice: d3.scaleSequential(d3.interpolateBlues).domain([0, 1]),
+
+  // Fire/danger theme (orange to deep red)
+  fire: d3.scaleSequential(d3.interpolateOrRd).domain([0, 1]),
+
+  // Plasma (good for colorblind accessibility)
+  plasma: d3.scaleSequential(d3.interpolatePlasma).domain([0, 1]),
+
+  // Viridis (good for colorblind accessibility)
+  viridis: d3.scaleSequential(d3.interpolateViridis).domain([0, 1]),
 } as const;
 
 /**
@@ -382,4 +394,41 @@ export function colorByCondition<TData = any>(
     }
     return fallback;
   };
+}
+
+/**
+ * Custom interpolator for vibrant heatmap (green → yellow → orange → red)
+ * More visible on white ice than the default RdYlBu scale
+ */
+function interpolateHeatmapVibrant(t: number): string {
+  // Color stops: green → lime → yellow → orange → red
+  const colors = [
+    { pos: 0.0, r: 0, g: 200, b: 0 }, // Green
+    { pos: 0.25, r: 128, g: 255, b: 0 }, // Lime/Yellow-green
+    { pos: 0.5, r: 255, g: 255, b: 0 }, // Yellow
+    { pos: 0.75, r: 255, g: 128, b: 0 }, // Orange
+    { pos: 1.0, r: 255, g: 0, b: 0 }, // Red
+  ];
+
+  // Find the two colors to interpolate between
+  let lower = colors[0];
+  let upper = colors[colors.length - 1];
+
+  for (let i = 0; i < colors.length - 1; i++) {
+    if (t >= colors[i].pos && t <= colors[i + 1].pos) {
+      lower = colors[i];
+      upper = colors[i + 1];
+      break;
+    }
+  }
+
+  // Interpolate between the two colors
+  const range = upper.pos - lower.pos;
+  const localT = range === 0 ? 0 : (t - lower.pos) / range;
+
+  const r = Math.round(lower.r + (upper.r - lower.r) * localT);
+  const g = Math.round(lower.g + (upper.g - lower.g) * localT);
+  const b = Math.round(lower.b + (upper.b - lower.b) * localT);
+
+  return `rgb(${r}, ${g}, ${b})`;
 }

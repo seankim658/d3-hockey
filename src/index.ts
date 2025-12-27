@@ -83,7 +83,7 @@ export {
   calculateScale,
   getDistance,
   getZone,
-} from "./utils/coordinates";
+} from "./utils/coordinate-utils";
 
 export {
   validateCoordinates,
@@ -139,5 +139,12 @@ export type {
   AggregationFunction,
   BuiltInAggregation,
 } from "./components/layers/hexbin-layer";
+
+export { HeatmapLayer } from "./components/layers/heatmap-layer";
+export type {
+  HeatmapLayerConfig,
+  HeatmapRenderContext,
+  HeatmapGridData,
+} from "./components/layers/heatmap-layer";
 
 export { LayerManager } from "./components/layers/layer-manager";

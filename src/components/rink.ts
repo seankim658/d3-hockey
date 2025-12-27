@@ -13,11 +13,12 @@ import {
   RINK_COLORS,
   LINE_WIDTHS,
 } from "../constants";
-import { calculateScale } from "../utils/coordinates";
+import { calculateScale } from "../utils/coordinate-utils";
 import type { RinkConfig, RinkColors, RenderDimensions } from "../types";
 import { LayerManager } from "./layers/layer-manager";
 import { EventLayer, EventLayerConfig } from "./layers/event-layer";
 import { HexbinLayer, HexbinLayerConfig } from "./layers/hexbin-layer";
+import { HeatmapLayer, HeatmapLayerConfig } from "./layers/heatmap-layer";
 import type { BaseLayer } from "./layers/base-layer";
 
 /**
@@ -36,6 +37,8 @@ export class Rink {
     null,
     undefined
   > | null = null;
+  private static instanceCounter = 0;
+  private clipPathId: string;
 
   /**
    * Create a new Rink renderer
@@ -81,6 +84,9 @@ export class Rink {
       this.config.halfRink,
       this.config.vertical,
     );
+
+    Rink.instanceCounter++;
+    this.clipPathId = `rink-clip-${Rink.instanceCounter}`;
   }
 
   /**
@@ -182,11 +188,11 @@ export class Rink {
     const rinkCenterX = padding + rinkLengthPx / 2;
     const rinkCenterY = padding + rinkWidthPx / 2;
 
-    const clipPath = defs.append("clipPath").attr("id", "rink-clip");
+    const clipPath = defs.append("clipPath").attr("id", this.clipPathId);
 
     if (this.config.vertical) {
-      const clipX = svgCenterX - rinkWidthPx / 2;
-      const clipY = svgCenterY - rinkLengthPx / 2;
+      const clipX = padding;
+      const clipY = padding;
 
       if (this.config.halfRink) {
         this.createVerticalHalfRinkClipPath(
@@ -217,10 +223,10 @@ export class Rink {
       this.layersGroup = mainGroup
         .append("g")
         .attr("class", "layers-group")
-        .attr("clip-path", "url(#rink-clip)");
+        .attr("clip-path", `url(#${this.clipPathId})`);
     } else {
-      const clipX = svgCenterX - rinkLengthPx / 2;
-      const clipY = svgCenterY - rinkWidthPx / 2;
+      const clipX = padding;
+      const clipY = padding;
 
       if (this.config.halfRink) {
         this.createHalfRinkClipPath(
@@ -252,7 +258,7 @@ export class Rink {
       this.layersGroup = mainGroup
         .append("g")
         .attr("class", "layers-group")
-        .attr("clip-path", "url(#rink-clip)");
+        .attr("clip-path", `url(#${this.clipPathId})`);
     }
 
     return svg;
@@ -522,6 +528,22 @@ export class Rink {
     };
 
     const layer = new HexbinLayer(data, layerConfig);
+    return this.addLayer(layer);
+  }
+
+  /**
+   * Add a heatmap layer
+   */
+  addHeatmap<TData = any>(
+    data: TData[],
+    config?: Partial<HeatmapLayerConfig<TData>>,
+  ): this {
+    const layerConfig: HeatmapLayerConfig<TData> = {
+      id: config?.id || "heatmap",
+      ...config,
+    };
+
+    const layer = new HeatmapLayer(data, layerConfig);
     return this.addLayer(layer);
   }
 
