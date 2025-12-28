@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import * as d3 from "d3";
 import { BaseLayer, BaseLayerConfig } from "./base-layer";
 import { defaultXAccessor, defaultYAccessor } from "../../utils/accessor-utils";
@@ -90,7 +88,7 @@ export interface HeatmapLayerConfig<TData> extends BaseLayerConfig {
 /**
  * Continuous density visualization using Kernel Density Estimation
  */
-export class HeatmapLayer<TData = any> extends BaseLayer<
+export class HeatmapLayer<TData> extends BaseLayer<
   TData,
   HeatmapLayerConfig<TData>
 > {

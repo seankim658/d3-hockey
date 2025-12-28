@@ -1,5 +1,3 @@
-/* eslint-disable  @typescript-eslint/no-explicit-any */
-
 import * as d3 from "d3";
 import { hexbin, type HexbinBin } from "d3-hexbin";
 import { BaseLayer, BaseLayerConfig } from "./base-layer";
@@ -124,7 +122,7 @@ export interface HexbinLayerConfig<TData> extends BaseLayerConfig {
 /**
  * Hexagonal Binning Layer
  */
-export class HexbinLayer<TData = any> extends BaseLayer<
+export class HexbinLayer<TData> extends BaseLayer<
   TData,
   HexbinLayerConfig<TData>
 > {
@@ -304,7 +302,11 @@ export class HexbinLayer<TData = any> extends BaseLayer<
       .enter()
       .append("path")
       .attr("class", "hexbin-cell")
-      .attr("transform", (d: any) => `translate(${d.x},${d.y}) scale(0)`)
+      .attr(
+        "transform",
+        (d: HexbinBin<[number, number, TData]>) =>
+          `translate(${d.x},${d.y}) scale(0)`,
+      )
       .attr("fill", (d) => activeColorScale(binValues.get(d)!))
       .attr("stroke", (d, i) =>
         typeof stroke === "function" ? stroke(d, i) : stroke,
@@ -362,12 +364,18 @@ export class HexbinLayer<TData = any> extends BaseLayer<
         .attr("fill", (d) => activeColorScale(binValues.get(d)!))
         .attr("opacity", opacity);
 
-      paths
-        .exit()
+      (
+        paths.exit() as d3.Selection<
+          SVGPathElement,
+          HexbinBin<[number, number, TData]>,
+          SVGGElement,
+          unknown
+        >
+      )
         .transition()
         .duration(animationDuration)
         .ease(easing)
-        .attr("transform", (d: any) => `translate(${d.x},${d.y}) scale(0)`)
+        .attr("transform", (d) => `translate(${d.x},${d.y}) scale(0)`)
         .remove();
     } else {
       enter

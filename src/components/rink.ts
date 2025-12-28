@@ -1,5 +1,3 @@
-/* eslint-disable  @typescript-eslint/no-explicit-any */
-
 /**
  * Rink renderer component
  * Draws NHL regulation hockey rink with all markings
@@ -487,7 +485,7 @@ export class Rink {
   /**
    * Add a custom layer to the rink
    */
-  addLayer(layer: BaseLayer): this {
+  addLayer(layer: BaseLayer<unknown>): this {
     if (!this.layerManager) {
       throw new Error("Rink not rendered. Call render() first.");
     }
@@ -499,7 +497,7 @@ export class Rink {
   /**
    * Add an event layer
    */
-  addEvents<TData = any>(
+  addEvents<TData>(
     data: TData[],
     config?: Partial<EventLayerConfig<TData>>,
   ): this {
@@ -515,7 +513,7 @@ export class Rink {
   /**
    * Add a hexbin layer
    */
-  addHexbin<TData = any>(
+  addHexbin<TData>(
     data: TData[],
     config?: Partial<HexbinLayerConfig<TData>>,
   ): this {
@@ -531,7 +529,7 @@ export class Rink {
   /**
    * Add a heatmap layer
    */
-  addHeatmap<TData = any>(
+  addHeatmap<TData>(
     data: TData[],
     config?: Partial<HeatmapLayerConfig<TData>>,
   ): this {

@@ -1,5 +1,3 @@
-/* eslint-disable  @typescript-eslint/no-explicit-any */
-
 import * as d3 from "d3";
 import { BaseLayer, BaseLayerConfig } from "./base-layer";
 import type {
@@ -41,7 +39,7 @@ export interface EventRenderContext<TData = unknown, TLayer = unknown> {
 /**
  * Configuration for event layer rendering
  */
-export interface EventLayerConfig<TData = any> extends BaseLayerConfig {
+export interface EventLayerConfig<TData> extends BaseLayerConfig {
   // Data accessors
   x?: Accessor<TData, number>;
   y?: Accessor<TData, number>;
@@ -90,7 +88,7 @@ export interface EventLayerConfig<TData = any> extends BaseLayerConfig {
 /**
  * Event layer class for rendering hockey events on the rink
  */
-export class EventLayer<TData = any> extends BaseLayer<
+export class EventLayer<TData> extends BaseLayer<
   TData,
   EventLayerConfig<TData>
 > {
@@ -216,7 +214,7 @@ export class EventLayer<TData = any> extends BaseLayer<
     const symbols = this.group
       .selectAll<SVGPathElement, TData>("path.event-symbol")
       .data(validEvents, (d: TData, i: number) => {
-        const obj = d as any;
+        const obj = d as Record<string, unknown>;
         return String(obj.id ?? obj.eventId ?? `event-${i}`);
       });
 
