@@ -313,6 +313,16 @@ export class HeatmapLayer<TData = any> extends BaseLayer<
     if (minValue === Infinity) minValue = 0;
     if (maxValue === -Infinity) maxValue = 0;
 
+    this.data.slice(0, 3).forEach((d, i) => {
+      const nhlX = this.config.x(d, i);
+      const nhlY = this.config.y(d, i);
+      const canvasPos = this.nhlToCanvas(nhlX, nhlY);
+      const svgPos = nhlToSVG({ x: nhlX, y: nhlY }, this.dimensions);
+      console.log(
+        `Point ${i}: NHL(${nhlX}, ${nhlY}) → SVG(${svgPos.x.toFixed(1)}, ${svgPos.y.toFixed(1)}) → Canvas(${canvasPos.x.toFixed(1)}, ${canvasPos.y.toFixed(1)})`,
+      );
+    });
+
     return {
       grid,
       width: gridWidth,
@@ -345,8 +355,12 @@ export class HeatmapLayer<TData = any> extends BaseLayer<
 
     // Create canvas if it doesn't exist
     if (!this.canvas) {
+      const { padding } = this.dimensions;
+
       this.foreignObject = this.group
         .append("foreignObject")
+        .attr("x", padding)
+        .attr("y", padding)
         .attr("width", width)
         .attr("height", height)
         .attr("class", "heatmap-canvas-container");
