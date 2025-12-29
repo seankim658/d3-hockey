@@ -1,7 +1,6 @@
-/* eslint-disable  @typescript-eslint/no-explicit-any */
-
 import * as d3 from "d3";
 import { Accessor } from "../types";
+import { extractNumericValue, extractStringValue } from "./accessor-utils";
 
 /**
  * NHL team colors (32 teams as of 2024-25 season)
@@ -150,21 +149,8 @@ export interface ColorByPropertyOptions {
 /**
  * Create a color accessor based on a data property
  * Uses built-in hockey color scales or custom scales
- *
- * @example
- * ```ts
- * // Use built-in shot quality scale (yellow to red)
- * color: colorByProperty('xG', { scale: 'shotQuality' })
- *
- * // Use custom scale
- * const myScale = d3.scaleSequential(d3.interpolateViridis).domain([0, 100]);
- * color: colorByProperty('speed', { customScale: myScale })
- *
- * // With custom domain
- * color: colorByProperty('danger', { scale: 'heatmap', domain: [0, 10] })
- * ```
  */
-export function colorByProperty<TData = any>(
+export function colorByProperty<TData>(
   property: string | Accessor<TData, number>,
   options: ColorByPropertyOptions = {},
 ): Accessor<TData, string> {
@@ -181,26 +167,24 @@ export function colorByProperty<TData = any>(
   if (customScale) {
     colorScale = customScale;
     if (domain) {
-      colorScale = colorScale.domain(domain as any);
+      colorScale = applyDomainToScale(colorScale, domain);
     }
   } else if (scaleName) {
     colorScale = HOCKEY_COLOR_SCALES[scaleName];
     if (domain) {
-      colorScale = colorScale.copy().domain(domain as any);
+      colorScale = applyDomainToScale(colorScale.copy(), domain);
     }
   } else {
     // Default to shot quality scale
     colorScale = HOCKEY_COLOR_SCALES.shotQuality;
     if (domain) {
-      colorScale = colorScale.copy().domain(domain as any);
+      colorScale = applyDomainToScale(colorScale.copy(), domain);
     }
   }
 
-  return (d: TData): string => {
-    const value =
-      typeof property === "string" ? (d as any)[property] : property(d, 0);
-
-    if (typeof value !== "number" || isNaN(value)) {
+  return (d: TData, i: number): string => {
+    const value = extractNumericValue(d, property, i);
+    if (value === undefined || isNaN(value)) {
       return fallback;
     }
 
@@ -220,32 +204,17 @@ export interface ColorByTeamOptions {
 
 /**
  * Create a color accessor based on team abbreviation
- *
- * @example
- * ```ts
- * // Use team primary colors
- * color: colorByTeam('team')
- *
- * // Use team secondary colors
- * color: colorByTeam('teamAbbr', { colorType: 'secondary' })
- *
- * // With custom property name and fallback
- * color: colorByTeam('homeTeam', { colorType: 'primary', fallback: '#999' })
- * ```
  */
-export function colorByTeam<TData = any>(
+export function colorByTeam<TData>(
   teamProperty: string | Accessor<TData, string> = "team",
   options: ColorByTeamOptions = {},
 ): Accessor<TData, string> {
   const { colorType = "primary", fallback = "#000000" } = options;
 
-  return (d: TData): string => {
-    const teamAbbr =
-      typeof teamProperty === "string"
-        ? (d as any)[teamProperty]
-        : teamProperty(d, 0);
+  return (d: TData, i: number): string => {
+    const teamAbbr = extractStringValue(d, teamProperty, i);
 
-    if (!teamAbbr || typeof teamAbbr !== "string") {
+    if (!teamAbbr) {
       return fallback;
     }
 
@@ -259,36 +228,53 @@ export function colorByTeam<TData = any>(
 }
 
 /**
+ * Known D3 color schemes that can be used with colorByCategory
+ */
+type D3ColorScheme =
+  | "schemeCategory10"
+  | "schemeAccent"
+  | "schemeDark2"
+  | "schemePaired"
+  | "schemePastel1"
+  | "schemePastel2"
+  | "schemeSet1"
+  | "schemeSet2"
+  | "schemeSet3"
+  | "schemeTableau10";
+
+/**
+ * Map of D3 color scheme names to their color arrays
+ */
+const D3_COLOR_SCHEMES: Record<D3ColorScheme, readonly string[]> = {
+  schemeCategory10: d3.schemeCategory10,
+  schemeAccent: d3.schemeAccent,
+  schemeDark2: d3.schemeDark2,
+  schemePaired: d3.schemePaired,
+  schemePastel1: d3.schemePastel1,
+  schemePastel2: d3.schemePastel2,
+  schemeSet1: d3.schemeSet1,
+  schemeSet2: d3.schemeSet2,
+  schemeSet3: d3.schemeSet3,
+  schemeTableau10: d3.schemeTableau10,
+};
+
+/**
  * Options for categorical color mapping
  */
 export interface ColorByCategoryOptions {
   // Color mapping for categories
   colors?: Record<string, string>;
   // Use D3 categorical scheme
-  scheme?: string; // e.g., 'schemeCategory10', 'schemeSet3'
+  scheme?: D3ColorScheme;
   // Fallback color
   fallback?: string;
 }
 
 /**
  * Create a color accessor based on categorical data
- *
- * @example
- * ```ts
- * // Map event types to colors
- * color: colorByCategory('eventType', {
- *   colors: {
- *     goal: '#00ff00',
- *     shot: '#0088ff',
- *     miss: '#888888'
- *   }
- * })
- *
- * // Use D3 color scheme
- * color: colorByCategory('playerPosition', { scheme: 'schemeCategory10' })
  * ```
  */
-export function colorByCategory<TData = any>(
+export function colorByCategory<TData>(
   property: string | Accessor<TData, string>,
   options: ColorByCategoryOptions = {},
 ): Accessor<TData, string> {
@@ -296,19 +282,16 @@ export function colorByCategory<TData = any>(
 
   // Create ordinal scale if using a D3 scheme
   let ordinalScale: d3.ScaleOrdinal<string, string> | null = null;
-  if (scheme) {
-    // Access the scheme from d3
-    const schemeColors = (d3 as any)[scheme];
+  if (scheme !== undefined) {
+    const schemeColors = D3_COLOR_SCHEMES[scheme];
     if (schemeColors) {
       ordinalScale = d3.scaleOrdinal<string, string>(schemeColors);
     }
   }
 
-  return (d: TData): string => {
-    const category =
-      typeof property === "string" ? (d as any)[property] : property(d, 0);
-
-    if (!category || typeof category !== "string") {
+  return (d: TData, i: number): string => {
+    const category = extractStringValue(d, property, i);
+    if (!category) {
       return fallback;
     }
 
@@ -328,17 +311,8 @@ export function colorByCategory<TData = any>(
 
 /**
  * Create a color gradient between two colors based on a property
- *
- * @example
- * ```ts
- * // Simple blue to red gradient
- * color: colorGradient('intensity', { from: '#0000ff', to: '#ff0000' })
- *
- * // With domain
- * color: colorGradient('xG', { from: '#yellow', to: '#red', domain: [0, 0.5] })
- * ```
  */
-export function colorGradient<TData = any>(
+export function colorGradient<TData>(
   property: string | Accessor<TData, number>,
   options: {
     from: string;
@@ -355,11 +329,9 @@ export function colorGradient<TData = any>(
     .range([from, to])
     .clamp(true);
 
-  return (d: TData): string => {
-    const value =
-      typeof property === "string" ? (d as any)[property] : property(d, 0);
-
-    if (typeof value !== "number" || isNaN(value)) {
+  return (d: TData, i: number): string => {
+    const value = extractNumericValue(d, property, i);
+    if (value === undefined || isNaN(value)) {
       return fallback;
     }
 
@@ -370,17 +342,8 @@ export function colorGradient<TData = any>(
 /**
  * Combine multiple color conditions with priority
  * Returns the first matching color function result
- *
- * @example
- * ```ts
- * // Color goals differently, then by team
- * color: colorByCondition([
- *   [(d) => d.eventType === 'goal', () => '#00ff00'],
- *   [(d) => true, colorByTeam('team')]
- * ])
- * ```
  */
-export function colorByCondition<TData = any>(
+export function colorByCondition<TData>(
   conditions: Array<
     [condition: (d: TData) => boolean, color: string | Accessor<TData, string>]
   >,
@@ -431,4 +394,21 @@ function interpolateHeatmapVibrant(t: number): string {
   const b = Math.round(lower.b + (upper.b - lower.b) * localT);
 
   return `rgb(${r}, ${g}, ${b})`;
+}
+
+/**
+ * Apply a domain to a color scale with proper type handling
+ */
+function applyDomainToScale(
+  scale: d3.ScaleSequential<string> | d3.ScaleDiverging<string>,
+  domain: [number, number] | [number, number, number],
+): d3.ScaleSequential<string> | d3.ScaleDiverging<string> {
+  if (domain.length === 3) {
+    return (scale as d3.ScaleDiverging<string>).domain(
+      domain as [number, number, number],
+    );
+  }
+  return (scale as d3.ScaleSequential<string>).domain(
+    domain as [number, number],
+  );
 }

@@ -1,3 +1,5 @@
+import type { Accessor } from "../types";
+
 /**
  * Default X coordinate accessor
  */
@@ -82,4 +84,48 @@ export function defaultEventTypeAccessor<T>(d: T): string | null {
   if (typeof obj.event === "string") return obj.event;
 
   return null;
+}
+
+/**
+ * Safely extract a numeric value from data using a property name or accessor function
+ */
+export function extractNumericValue<TData>(
+  d: TData,
+  property: string | Accessor<TData, number>,
+  index: number = 0,
+): number | undefined {
+  if (typeof property === "function") {
+    return property(d, index);
+  }
+
+  if (d !== null && typeof d === "object") {
+    const value = (d as Record<string, unknown>)[property];
+    if (typeof value === "number") {
+      return value;
+    }
+  }
+
+  return undefined;
+}
+
+/**
+ * Safely extract a string value from data using a property name or accessor function
+ */
+export function extractStringValue<TData>(
+  d: TData,
+  property: string | Accessor<TData, string>,
+  index: number = 0,
+): string | undefined {
+  if (typeof property === "function") {
+    return property(d, index);
+  }
+
+  if (d !== null && typeof d === "object") {
+    const value = (d as Record<string, unknown>)[property];
+    if (typeof value === "string") {
+      return value;
+    }
+  }
+
+  return undefined;
 }

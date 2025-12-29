@@ -1,12 +1,3 @@
-/* eslint-disable  @typescript-eslint/no-explicit-any */
-
-/**
- * NHL API Type Definitions
- *
- * Comprehensive type definitions for the NHL API v1
- * Based on api-web.nhle.com endpoints
- */
-
 /**
  * Period descriptor from NHL API
  */
@@ -53,7 +44,6 @@ export interface NHLBaseEvent {
   typeCode: number;
   typeDescKey: string;
   sortOrder: number;
-  details?: any;
 }
 
 /**
@@ -64,6 +54,7 @@ export interface EventDetailsWithLocation {
   yCoord: number;
   zoneCode: "D" | "N" | "O"; // Defensive, Neutral, Offensive
   eventOwnerTeamId: number;
+  [key: string]: unknown;
 }
 
 /**
