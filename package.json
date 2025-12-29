@@ -22,7 +22,8 @@
     "preview": "vite preview",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
-    "docs:preview": "vitepress preview docs"
+    "docs:preview": "vitepress preview docs",
+    "prepublishOnly": "npm run build"
   },
   "keywords": [
     "d3",
@@ -30,18 +31,29 @@
     "visualization",
     "nhl",
     "charts",
-    "rink"
+    "rink",
+    "sports",
+    "data-visualization",
+    "svg"
   ],
   "author": "Sean Kim",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/seankim658/d3-hockey.git"
+  },
+  "bugs": {
+    "url": "https://github.com/seankim658/d3-hockey/issues"
+  },
+  "homepage": "https://github.com/seankim658/d3-hockey#readme",
   "peerDependencies": {
     "d3": "^7.0.0"
   },
   "dependencies": {
-    "d3": "^7.0.0",
     "d3-hexbin": "^0.2.2"
   },
   "devDependencies": {
+    "d3": "^7.0.0",
     "@eslint/js": "^9.39.0",
     "@types/d3": "^7.4.3",
     "@types/d3-hexbin": "^0.2.5",
