@@ -527,43 +527,6 @@ export class HeatmapLayer<TData> extends BaseLayer<
     this.canvas.addEventListener("click", this.boundClickHandler);
 
     this.canvas.style.cursor = enableTooltip ? "crosshair" : "default";
-
-    this.canvas.addEventListener("mousemove", (event: MouseEvent) => {
-      const result = getValueAtPosition(event);
-      if (!result) {
-        if (enableTooltip) hideTooltip();
-        return;
-      }
-
-      const { value, nhlX, nhlY } = result;
-      const normalizedValue = this.gridData
-        ? value / this.gridData.maxValue
-        : 0;
-
-      if (enableTooltip && normalizedValue >= threshold) {
-        const content = tooltip(value, nhlX, nhlY);
-        showTooltip(event, content);
-        moveTooltip(event);
-      } else if (enableTooltip) {
-        hideTooltip();
-      }
-
-      onHover(event, value, nhlX, nhlY);
-    });
-
-    this.canvas.addEventListener("mouseout", (event: MouseEvent) => {
-      if (enableTooltip) hideTooltip();
-      onMouseOut(event);
-    });
-
-    this.canvas.addEventListener("click", (event: MouseEvent) => {
-      const result = getValueAtPosition(event);
-      if (result) {
-        onClick(event, result.value, result.nhlX, result.nhlY);
-      }
-    });
-
-    this.canvas.style.cursor = enableTooltip ? "crosshair" : "default";
   }
 
   /**

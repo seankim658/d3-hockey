@@ -1,10 +1,27 @@
+import { RINK_DIMENSIONS } from "../constants";
 import type { HockeyEvent } from "../types";
 
 /**
- * Validate that data has required coordinate fields
+ * Check if all events have valid coordinates
+ * Returns true if ALL events have valid x/y coordinate numbers
  */
-export function validateCoordinates(data: HockeyEvent[]): boolean {
+export function hasValidCoordinates(data: HockeyEvent[]): boolean {
   return data.every(
+    (d) =>
+      d.coordinates &&
+      typeof d.coordinates.x === "number" &&
+      typeof d.coordinates.y === "number" &&
+      !isNaN(d.coordinates.x) &&
+      !isNaN(d.coordinates.y),
+  );
+}
+
+/**
+ * Filter events to only those with valid coordinates
+ * Removes events that have missing, null, or NaN coordinate values
+ */
+export function validateCoordinates(data: HockeyEvent[]): HockeyEvent[] {
+  return data.filter(
     (d) =>
       d.coordinates &&
       typeof d.coordinates.x === "number" &&
@@ -21,7 +38,7 @@ export function filterByZone(
   events: HockeyEvent[],
   zone: "offensive" | "defensive" | "neutral",
 ): HockeyEvent[] {
-  const threshold = 25; // Blue line at ±25 feet
+  const threshold = RINK_DIMENSIONS.BLUE_LINE_OFFSET; // Blue line at ±25 feet
 
   return events.filter((event) => {
     const x = event.coordinates.x;

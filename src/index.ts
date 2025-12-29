@@ -87,6 +87,7 @@ export {
 
 export {
   validateCoordinates,
+  hasValidCoordinates,
   filterByZone,
   filterByTeam,
   filterByPeriod,
