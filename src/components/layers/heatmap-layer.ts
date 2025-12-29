@@ -105,6 +105,10 @@ export class HeatmapLayer<TData> extends BaseLayer<
   private canvasWidth: number = 0;
   private canvasHeight: number = 0;
 
+  private boundMouseMoveHandler: ((event: MouseEvent) => void) | null = null;
+  private boundMouseOutHandler: ((event: MouseEvent) => void) | null = null;
+  private boundClickHandler: ((event: MouseEvent) => void) | null = null;
+
   protected getDefaults(): Required<HeatmapLayerConfig<TData>> {
     return {
       // BaseLayer defaults
@@ -435,6 +439,8 @@ export class HeatmapLayer<TData> extends BaseLayer<
   private setupInteractions(): void {
     if (!this.canvas || !this.gridData) return;
 
+    this.removeEventListeners();
+
     const {
       showTooltip: enableTooltip,
       tooltip,
@@ -481,6 +487,47 @@ export class HeatmapLayer<TData> extends BaseLayer<
       return { value, nhlX: nhlCoords.x, nhlY: nhlCoords.y };
     };
 
+    this.boundMouseMoveHandler = (event: MouseEvent) => {
+      const result = getValueAtPosition(event);
+      if (!result) {
+        if (enableTooltip) hideTooltip();
+        return;
+      }
+
+      const { value, nhlX, nhlY } = result;
+      const normalizedValue = this.gridData
+        ? value / this.gridData.maxValue
+        : 0;
+
+      if (enableTooltip && normalizedValue >= threshold) {
+        const content = tooltip(value, nhlX, nhlY);
+        showTooltip(event, content);
+        moveTooltip(event);
+      } else if (enableTooltip) {
+        hideTooltip();
+      }
+
+      onHover(event, value, nhlX, nhlY);
+    };
+
+    this.boundMouseOutHandler = (event: MouseEvent) => {
+      if (enableTooltip) hideTooltip();
+      onMouseOut(event);
+    };
+
+    this.boundClickHandler = (event: MouseEvent) => {
+      const result = getValueAtPosition(event);
+      if (result) {
+        onClick(event, result.value, result.nhlX, result.nhlY);
+      }
+    };
+
+    this.canvas.addEventListener("mousemove", this.boundMouseMoveHandler);
+    this.canvas.addEventListener("mouseout", this.boundMouseOutHandler);
+    this.canvas.addEventListener("click", this.boundClickHandler);
+
+    this.canvas.style.cursor = enableTooltip ? "crosshair" : "default";
+
     this.canvas.addEventListener("mousemove", (event: MouseEvent) => {
       const result = getValueAtPosition(event);
       if (!result) {
@@ -520,6 +567,47 @@ export class HeatmapLayer<TData> extends BaseLayer<
   }
 
   /**
+   * Remove canvas event listeners
+   */
+  private removeEventListeners(): void {
+    if (!this.canvas) return;
+
+    if (this.boundMouseMoveHandler) {
+      this.canvas.removeEventListener("mousemove", this.boundMouseMoveHandler);
+    }
+    if (this.boundMouseOutHandler) {
+      this.canvas.removeEventListener("mouseout", this.boundMouseOutHandler);
+    }
+    if (this.boundClickHandler) {
+      this.canvas.removeEventListener("click", this.boundClickHandler);
+    }
+  }
+
+  /**
+   * Clean up resources when layer is destroyed
+   */
+  destroy(): void {
+    // Remove event listeners first
+    this.removeEventListeners();
+    this.boundMouseMoveHandler = null;
+    this.boundMouseOutHandler = null;
+    this.boundClickHandler = null;
+
+    // Remove the foreignObject containing the canvas
+    if (this.foreignObject) {
+      this.foreignObject.remove();
+      this.foreignObject = null;
+    }
+
+    // Clear references
+    this.canvas = null;
+    this.gridData = null;
+
+    // Call parent destroy
+    super.destroy();
+  }
+
+  /**
    * Update with new data
    */
   update(data: TData[]): void {
@@ -547,23 +635,6 @@ export class HeatmapLayer<TData> extends BaseLayer<
       }
     }
     this.gridData = null;
-  }
-
-  /**
-   * Destroy the layer and clean up
-   */
-  destroy(): void {
-    if (this.canvas) {
-      const oldCanvas = this.canvas;
-      this.canvas = null;
-      oldCanvas.remove();
-    }
-    if (this.foreignObject) {
-      this.foreignObject.remove();
-      this.foreignObject = null;
-    }
-    this.gridData = null;
-    super.destroy();
   }
 
   /**
