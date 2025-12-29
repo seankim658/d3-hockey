@@ -164,6 +164,34 @@ export class EventLayer<TData> extends BaseLayer<
   }
 
   /**
+   * Generate a unique key for an event for D3 data binding.
+   * Tries common ID fields, falls back to index-based key.
+   */
+  private getEventKey(d: TData, i: number): string {
+    if (d === null || d === undefined) {
+      return `event-${i}`;
+    }
+
+    if (typeof d === "object") {
+      if ("id" in d) {
+        const id = (d as Record<string, unknown>).id;
+        if (typeof id === "string" || typeof id === "number") {
+          return String(id);
+        }
+      }
+
+      if ("eventId" in d) {
+        const eventId = (d as Record<string, unknown>).eventId;
+        if (typeof eventId === "string" || typeof eventId === "number") {
+          return String(eventId);
+        }
+      }
+    }
+
+    return `event-${i}`;
+  }
+
+  /**
    * Initialize tooltip if needed
    */
   initialize(
@@ -213,10 +241,7 @@ export class EventLayer<TData> extends BaseLayer<
 
     const symbols = this.group
       .selectAll<SVGPathElement, TData>("path.event-symbol")
-      .data(validEvents, (d: TData, i: number) => {
-        const obj = d as Record<string, unknown>;
-        return String(obj.id ?? obj.eventId ?? `event-${i}`);
-      });
+      .data(validEvents, (d: TData, i: number) => this.getEventKey(d, i));
 
     const positionMap = new Map<TData, EventRenderContext<TData>["position"]>();
 
