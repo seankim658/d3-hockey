@@ -4,14 +4,14 @@
  */
 
 import * as d3 from "d3";
-import { BaseLayer } from "./base-layer";
+import { BaseLayer, BaseLayerConfig } from "./base-layer";
 import type { RenderDimensions } from "../../types";
 
 /**
  * Manages all layers on a rink visualization
  */
 export class LayerManager {
-  private layers: Map<string, BaseLayer> = new Map();
+  private layers: Map<string, BaseLayer<unknown, BaseLayerConfig>> = new Map();
   private container: d3.Selection<SVGGElement, unknown, null, undefined>;
   private dimensions: RenderDimensions;
 
@@ -26,7 +26,7 @@ export class LayerManager {
   /**
    * Add a layer to the manager
    */
-  addLayer(layer: BaseLayer): void {
+  addLayer(layer: BaseLayer<unknown, BaseLayerConfig>): void {
     const config = layer.getConfig();
 
     if (this.layers.has(config.id)) {
@@ -57,7 +57,7 @@ export class LayerManager {
   /**
    * Get a layer by ID
    */
-  getLayer(id: string): BaseLayer | undefined {
+  getLayer(id: string): BaseLayer<unknown, BaseLayerConfig> | undefined {
     return this.layers.get(id);
   }
 

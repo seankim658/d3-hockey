@@ -4,8 +4,6 @@
  * A comprehensive, extensible library for creating beautiful hockey visualizations
  */
 
-export const version = "0.1.0";
-
 export {
   RINK_DIMENSIONS,
   NHL_COORDS,

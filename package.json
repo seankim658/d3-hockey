@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "description": "A comprehensive D3.js library for hockey data visualization with customizable rink rendering, shot charts, heatmaps, and interactive overlays",
   "type": "module",
+  "sideEffects": false,
   "main": "./dist/d3-hockey.umd.js",
   "module": "./dist/d3-hockey.js",
   "types": "./dist/index.d.ts",
@@ -14,7 +15,8 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "LICENSE"
   ],
   "scripts": {
     "dev": "vite",
