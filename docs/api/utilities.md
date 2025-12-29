@@ -151,61 +151,67 @@ function nhlEventToHockeyEvent(event: NHLEventWithLocation): HockeyEvent;
 
 ## Data Utilities
 
-### validateCoordinates()
+### hasValidCoordinates()
 
-Filters data to only entries with valid coordinates.
+Returns true if ALL events in the array have valid x/y coordinate numbers.
 
 ```typescript
-function validateCoordinates<T>(data: T[]): T[];
+function hasValidCoordinates(data: HockeyEvent[]): boolean;
+```
+
+### validateCoordinates()
+
+Filters events to only those with valid coordinates (removes events with missing, null, or NaN coordinate values).
+
+```typescript
+function validateCoordinates(data: HockeyEvent[]): HockeyEvent[];
 ```
 
 ### filterByZone()
 
 ```typescript
-function filterByZone<T extends { coordinates: NHLCoordinate }>(
-  data: T[],
-  zone: "offensive" | "neutral" | "defensive",
-): T[];
+function filterByZone(
+  events: HockeyEvent[],
+  zone: "offensive" | "defensive" | "neutral",
+): HockeyEvent[];
 ```
 
 ### filterByTeam()
 
 ```typescript
-function filterByTeam<T>(
-  data: T[],
-  team: string,
-  accessor?: (d: T) => string,
-): T[];
+function filterByTeam(events: HockeyEvent[], team: string): HockeyEvent[];
 ```
 
 ### filterByPeriod()
 
 ```typescript
-function filterByPeriod<T>(
-  data: T[],
-  period: number,
-  accessor?: (d: T) => number,
-): T[];
+function filterByPeriod(events: HockeyEvent[], period: number): HockeyEvent[];
 ```
 
 ### groupBy()
 
 ```typescript
-function groupBy<T>(
+function groupBy<T extends Record<string, unknown>>(
   data: T[],
-  key: keyof T | ((d: T) => string | number),
+  key: keyof T,
 ): Map<string | number, T[]>;
 ```
 
 ### calculateStats()
 
-Returns min, max, mean, median for numeric data.
+Returns basic statistics for a numeric property.
 
 ```typescript
-function calculateStats<T>(
-  data: T[],
-  accessor: (d: T) => number,
-): { min: number; max: number; mean: number; median: number };
+function calculateStats(
+  data: HockeyEvent[],
+  getValue: (d: HockeyEvent) => number,
+): {
+  count: number;
+  sum: number;
+  mean: number;
+  min: number;
+  max: number;
+};
 ```
 
 ---
@@ -299,6 +305,34 @@ Returns color based on first matching condition.
 function colorByCondition<T>(
   conditions: Array<[(d: T) => boolean, string]>,
   defaultColor: string,
+): Accessor<T, string>;
+```
+
+### getOpacity()
+
+Returns an opacity value for a data point.
+
+```typescript
+function getOpacity<T>(
+  d: T,
+  opacity: number | Accessor<T, number>,
+  index: number,
+): number;
+```
+
+### colorGradient()
+
+Creates an accessor that maps numeric values to a color gradient between two colors.
+
+```typescript
+function colorGradient<T>(
+  property: keyof T | ((d: T) => number),
+  options: {
+    from: string;
+    to: string;
+    domain?: [number, number];
+    fallback?: string;
+  },
 ): Accessor<T, string>;
 ```
 

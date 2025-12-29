@@ -65,7 +65,8 @@ Instead of just counting shots, you can aggregate by a metric (like average shot
 // Calculate distance for each shot
 new Rink("#container").render().addHexbin(shots, {
   radius: 5,
-  // Calculate distance from center ice (0,0) as a mock metric
+  // Calculate distance from center ice (0,0) as a mock metric (this mock metric isn't very 
+  // practically useful but just serves as an example in using the aggregation functionality)
   value: (d) => Math.sqrt(d.coordinates.x ** 2 + d.coordinates.y ** 2),
   aggregation: "mean",
   colorScale: d3.scaleSequential(d3.interpolateViridis),

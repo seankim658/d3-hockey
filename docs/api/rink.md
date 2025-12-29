@@ -49,6 +49,14 @@ Adds a [HexbinLayer](/api/hexbin-layer).
 addHexbin<TData>(data: TData[], config?: Partial<HexbinLayerConfig<TData>>): this
 ```
 
+### addHeatmap()
+
+Adds a [HeatmapLayer](/api/heatmap-layer).
+
+```typescript
+addHeatmap<TData>(data: TData[], config?: Partial<HeatmapLayerConfig>): this
+```
+
 ### addLayer()
 
 Adds a custom layer extending [BaseLayer](/api/base-layer).
@@ -86,5 +94,5 @@ new Rink("#container")
 ## See Also
 
 - [RinkConfig](/api/types#rinkconfig), [RinkColors](/api/types#rinkcolors) — Type definitions
-- [EventLayer](/api/event-layer), [HexbinLayer](/api/hexbin-layer) — Layer configuration
+- [EventLayer](/api/event-layer), [HexbinLayer](/api/hexbin-layer), [HeatmapLayer](/api/heatmap-layer) — Layer configuration
 - [Examples](/examples/) — Usage examples

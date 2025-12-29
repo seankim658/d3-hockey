@@ -132,7 +132,7 @@ rink.addHexbin(shots, { aggregation: shootingPct });
 
 ## Inherited Methods
 
-From [BaseLayer](/api/base-layer): `render()`, `update(data)`, `show()`, `hide()`, `destroy()`, `getConfig()`, `updateConfig(config)`
+From [BaseLayer](/api/base-layer): `render()`, `update(data)`, `show()`, `hide()`, `destroy()`, `getConfig()`, `getData()`
 
 ## See Also
 

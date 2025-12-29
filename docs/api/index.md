@@ -8,6 +8,7 @@ Complete API documentation for d3-hockey.
 | ---------------------------------- | ------------------------------- |
 | [Rink](/api/rink)                  | Main visualization class        |
 | [EventLayer](/api/event-layer)     | Individual event markers        |
+| [HeatmapLayer](/api/heatmap-layer) | Continuous density maps         |
 | [HexbinLayer](/api/hexbin-layer)   | Hexagonal binning/density maps  |
 | [BaseLayer](/api/base-layer)       | Abstract base for custom layers |
 | [LayerManager](/api/layer-manager) | Layer lifecycle management      |
@@ -45,6 +46,7 @@ export {
   Rink,
   EventLayer,
   HexbinLayer,
+  HeatmapLayer,
   BaseLayer,
   LayerManager,
   NHLDataManager,
@@ -71,6 +73,9 @@ export type {
   EventRenderContext,
   HexbinLayerConfig,
   HexbinRenderContext,
+  HeatmapLayerConfig,
+  HeatmapRenderContext,
+  HeatmapGridData,
   AggregationFunction,
   BuiltInAggregation,
 };
@@ -80,6 +85,13 @@ export type {
   NHLEvent,
   NHLPlayByPlayResponse,
   NHLEventWithLocation,
+  NHLEventWithoutLocation,
+  NHLPlayerResponse,
+  NHLPlayerInfo,
+  NHLTeamInfo,
+  NHLBaseEvent,
+  PeriodDescriptor,
+  EventDetailsWithLocation,
   GoalEvent,
   ShotOnGoalEvent,
   MissedShotEvent,
@@ -105,6 +117,7 @@ export {
   isTakeaway,
   isPenalty,
   isShotEvent,
+  NHL_EVENT_TYPE_CODES,
 };
 
 // Coordinate utilities
@@ -120,6 +133,7 @@ export {
 
 // Data utilities
 export {
+  hasValidCoordinates,
   validateCoordinates,
   filterByZone,
   filterByTeam,
@@ -136,9 +150,11 @@ export {
   HOCKEY_COLOR_SCALES,
   createColorScale,
   getShotResultColor,
+  getOpacity,
   colorByProperty,
   colorByTeam,
   colorByCategory,
+  colorGradient,
   colorByCondition,
 };
 
@@ -150,6 +166,9 @@ export {
   scaleSqrtByProperty,
   scaleLogByProperty,
   scaleByThresholds,
+  type ScaleOptions,
+  type RadiusScaleOptions,
+  type OpacityScaleOptions,
 };
 
 // Parser functions

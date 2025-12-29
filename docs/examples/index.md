@@ -12,6 +12,10 @@ Learn how to render a hockey rink with different configurations and styling opti
 
 Visualize shot (or other event) data with customizable markers, colors, and styles.
 
+### [Heatmap Charts](/examples/heatmap-layer)
+
+Create smooth, continuous density visualizations using kernel density estimation.
+
 ### [Hexbin Charts](/examples/hexbin-layer)
 
 Create density maps and hexbin aggregations to show event patterns.
@@ -31,6 +35,8 @@ Work with real NHL API data using the built-in `NHLDataManager` and parsing util
 More examples are being added. Check back soon for:
 
 - Interactive visualizations (zoom)
-- Player tracking visualization
+- Support for external components such as titles, game metadata, legends, etc.
+- Player tracking support
 - Zone entry/exit charts
 - Passing networks
+- Additional customization
