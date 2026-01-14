@@ -17,6 +17,12 @@ export const RINK_DIMENSIONS = {
   BLUE_LINE_OFFSET: 25,
   // Center circle radius
   CENTER_CIRCLE_RADIUS: 15,
+  // Neutral zone faceoff dot position
+  NEUTRAL_DOT_X: 20,
+  NEUTRAL_DOT_Y: 22,
+  // Faceoff circle positions
+  FACEOFF_CIRCLE_X: 69,
+  FACEOFF_CIRCLE_Y: 22,
   // Faceoff circle radius
   FACEOFF_CIRCLE_RADIUS: 15,
   // Faceoff dot radius in inches

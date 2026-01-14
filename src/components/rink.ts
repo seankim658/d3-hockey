@@ -924,11 +924,13 @@ export class Rink {
   private drawFaceoffCircles(
     group: d3.Selection<SVGGElement, unknown, null, undefined>,
   ): void {
+    const { FACEOFF_CIRCLE_X, FACEOFF_CIRCLE_Y } = RINK_DIMENSIONS;
+
     const positions: Array<[number, number]> = [
-      [69, 22],
-      [69, -22],
-      [-69, 22],
-      [-69, -22],
+      [FACEOFF_CIRCLE_X, FACEOFF_CIRCLE_Y],
+      [FACEOFF_CIRCLE_X, -FACEOFF_CIRCLE_Y],
+      [-FACEOFF_CIRCLE_X, FACEOFF_CIRCLE_Y],
+      [-FACEOFF_CIRCLE_X, -FACEOFF_CIRCLE_Y],
     ];
 
     positions.forEach(([x, y]) => {
@@ -964,19 +966,22 @@ export class Rink {
   private drawFaceoffDots(
     group: d3.Selection<SVGGElement, unknown, null, undefined>,
   ): void {
+    const { FACEOFF_CIRCLE_X, FACEOFF_CIRCLE_Y, NEUTRAL_DOT_X, NEUTRAL_DOT_Y } =
+      RINK_DIMENSIONS;
+
     // Faceoff dot positions matching the circles
     const positions: Array<[number, number, string]> = [
       // Offensive zone
-      [69, 22, "offensive-right-top-dot"],
-      [69, -22, "offensive-right-bottom-dot"],
+      [FACEOFF_CIRCLE_X, FACEOFF_CIRCLE_Y, "offensive-right-top-dot"],
+      [FACEOFF_CIRCLE_X, -FACEOFF_CIRCLE_Y, "offensive-right-bottom-dot"],
       // Defensive zone
-      [-69, 22, "defensive-left-top-dot"],
-      [-69, -22, "defensive-left-bottom-dot"],
+      [-FACEOFF_CIRCLE_X, FACEOFF_CIRCLE_Y, "defensive-left-top-dot"],
+      [-FACEOFF_CIRCLE_X, -FACEOFF_CIRCLE_Y, "defensive-left-bottom-dot"],
       // Neutral zone
-      [20, 22, "neutral-right-top-dot"],
-      [20, -22, "neutral-right-bottom-dot"],
-      [-20, 22, "neutral-left-top-dot"],
-      [-20, -22, "neutral-left-bottom-dot"],
+      [NEUTRAL_DOT_X, NEUTRAL_DOT_Y, "neutral-right-top-dot"],
+      [NEUTRAL_DOT_X, -NEUTRAL_DOT_Y, "neutral-right-bottom-dot"],
+      [-NEUTRAL_DOT_X, NEUTRAL_DOT_Y, "neutral-left-top-dot"],
+      [-NEUTRAL_DOT_X, -NEUTRAL_DOT_Y, "neutral-left-bottom-dot"],
     ];
 
     positions.forEach(([x, y, className]) => {
@@ -1011,11 +1016,13 @@ export class Rink {
   private drawFaceoffHashes(
     group: d3.Selection<SVGGElement, unknown, null, undefined>,
   ): void {
+    const { FACEOFF_CIRCLE_X, FACEOFF_CIRCLE_Y } = RINK_DIMENSIONS;
+
     const positions: Array<[number, number]> = [
-      [69, 22],
-      [69, -22],
-      [-69, 22],
-      [-69, -22],
+      [FACEOFF_CIRCLE_X, FACEOFF_CIRCLE_Y],
+      [FACEOFF_CIRCLE_X, -FACEOFF_CIRCLE_Y],
+      [-FACEOFF_CIRCLE_X, FACEOFF_CIRCLE_Y],
+      [-FACEOFF_CIRCLE_X, -FACEOFF_CIRCLE_Y],
     ];
 
     positions.forEach(([nhlX, nhlY]) => {
