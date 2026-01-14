@@ -20,22 +20,31 @@ export function getSharedTooltip(): d3.Selection<
   HTMLElement,
   unknown
 > {
-  if (!sharedTooltip || sharedTooltip.empty()) {
-    sharedTooltip = d3
-      .select<HTMLElement, unknown>("body")
-      .append("div")
-      .attr("class", "d3-hockey-tooltip")
-      .style("position", "absolute")
-      .style("visibility", "hidden")
-      .style("background-color", "rgba(0, 0, 0, 0.85)")
-      .style("color", "#fff")
-      .style("padding", "8px 12px")
-      .style("border-radius", "4px")
-      .style("font-size", "12px")
-      .style("pointer-events", "none")
-      .style("z-index", "1000")
-      .style("box-shadow", "0 2px 4px rgba(0,0,0,0.2)");
+  const node = sharedTooltip?.node();
+  if (node && document.body.contains(node)) {
+    return sharedTooltip!;
   }
+
+  if (sharedTooltip) {
+    sharedTooltip.remove();
+    sharedTooltip = null;
+  }
+
+  sharedTooltip = d3
+    .select<HTMLElement, unknown>("body")
+    .append("div")
+    .attr("class", "d3-hockey-tooltip")
+    .style("position", "absolute")
+    .style("visibility", "hidden")
+    .style("background-color", "rgba(0, 0, 0, 0.85)")
+    .style("color", "#fff")
+    .style("padding", "8px 12px")
+    .style("border-radius", "4px")
+    .style("font-size", "12px")
+    .style("pointer-events", "none")
+    .style("z-index", "1000")
+    .style("box-shadow", "0 2px 4px rgba(0,0,0,0.2)");
+
   return sharedTooltip;
 }
 
@@ -67,4 +76,15 @@ export function moveTooltip(event: MouseEvent): void {
 export function hideTooltip(): void {
   const tooltip = getSharedTooltip();
   tooltip.style("visibility", "hidden");
+}
+
+/**
+ * Destroy the shared tooltip element
+ * Call this when unmounting your visualization to clean up the DOM
+ */
+export function destroyTooltip(): void {
+  if (sharedTooltip) {
+    sharedTooltip.remove();
+    sharedTooltip = null;
+  }
 }
