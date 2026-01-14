@@ -283,21 +283,46 @@ export class HeatmapLayer<TData> extends BaseLayer<
     const sigma = bandwidthPx / 3;
     const sigmaSq2 = 2 * sigma * sigma;
 
-    // Apply Gaussian kernel for each grid cell
-    for (let gy = 0; gy < gridHeight; gy++) {
-      for (let gx = 0; gx < gridWidth; gx++) {
-        const cellX = gx * cellSize + cellSize / 2;
-        const cellY = gy * cellSize + cellSize / 2;
+    const cutoffDistance = bandwidthPx * 3;
+    const cutoffDistanceSq = cutoffDistance * cutoffDistance;
 
-        let density = 0;
-        for (const point of points) {
+    for (const point of points) {
+      // Calculate grid bounds affected by this point
+      const minGx = Math.max(
+        0,
+        Math.floor((point.x - cutoffDistance) / cellSize),
+      );
+      const maxGx = Math.min(
+        gridWidth - 1,
+        Math.ceil((point.x + cutoffDistance) / cellSize),
+      );
+      const minGy = Math.max(
+        0,
+        Math.floor((point.y - cutoffDistance) / cellSize),
+      );
+      const maxGy = Math.min(
+        gridHeight - 1,
+        Math.ceil((point.y + cutoffDistance) / cellSize),
+      );
+
+      for (let gy = minGy; gy <= maxGy; gy++) {
+        const cellY = gy * cellSize + cellSize / 2;
+        const dy = cellY - point.y;
+        const dySq = dy * dy;
+
+        // Early exit if dy alone exceeds cutoff
+        if (dySq > cutoffDistanceSq) continue;
+
+        for (let gx = minGx; gx <= maxGx; gx++) {
+          const cellX = gx * cellSize + cellSize / 2;
           const dx = cellX - point.x;
-          const dy = cellY - point.y;
-          const distSq = dx * dx + dy * dy;
+          const distSq = dx * dx + dySq;
+
+          if (distSq > cutoffDistanceSq) continue;
+
           const kernel = Math.exp(-distSq / sigmaSq2);
-          density += kernel * point.weight;
+          grid[gy][gx] += kernel * point.weight;
         }
-        grid[gy][gx] = density;
       }
     }
 
