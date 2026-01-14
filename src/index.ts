@@ -120,6 +120,14 @@ export {
   type OpacityScaleOptions,
 } from "./utils/scale-utils";
 
+export {
+  getSharedTooltip,
+  showTooltip,
+  moveTooltip,
+  hideTooltip,
+  destroyTooltip,
+} from "./utils/tooltip-utils";
+
 export { Rink } from "./components/rink";
 
 export { BaseLayer } from "./components/layers/base-layer";
