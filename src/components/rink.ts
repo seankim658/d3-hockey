@@ -904,7 +904,7 @@ export class Rink {
     const endX = cx + radius * Math.cos(endAngle);
     const endY = cy + radius * Math.sin(endAngle);
 
-    const sweepFlag = isOffensive ? 1 : 1;
+    const sweepFlag = 1;
 
     group
       .append("path")
