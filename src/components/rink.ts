@@ -10,6 +10,7 @@ import {
   DEFAULT_SVG,
   RINK_COLORS,
   LINE_WIDTHS,
+  VISUAL_DEFAULTS,
 } from "../constants";
 import { calculateScale } from "../utils/coordinate-utils";
 import type { RinkConfig, RinkColors, RenderDimensions } from "../types";
@@ -651,7 +652,7 @@ export class Rink {
         {
           fill: "none",
           stroke: this.config.colors.boards,
-          strokeWidth: 2,
+          strokeWidth: VISUAL_DEFAULTS.BOARD_STROKE_WIDTH,
         },
       );
     } else {
@@ -666,7 +667,7 @@ export class Rink {
         .attr("ry", cornerRadius)
         .attr("fill", "none")
         .attr("stroke", this.config.colors.boards)
-        .attr("stroke-width", 2);
+        .attr("stroke-width", VISUAL_DEFAULTS.BOARD_STROKE_WIDTH);
     }
   }
 
@@ -745,7 +746,11 @@ export class Rink {
 
     if (style.fill) element.attr("fill", style.fill);
     if (style.stroke) element.attr("stroke", style.stroke);
-    if (style.strokeWidth) element.attr("stroke-width", style.strokeWidth);
+    if (style.strokeWidth)
+      element.attr(
+        "stroke-width",
+        style.strokeWidth || VISUAL_DEFAULTS.BOARD_STROKE_WIDTH,
+      );
   }
 
   /**
@@ -1104,9 +1109,11 @@ export class Rink {
     const cx = this.getX(x);
     const cy = this.getY(y);
 
-    const creaseRadius_px = this.feetToPixels(RINK_DIMENSIONS.CREASE_RADIUS); // 6ft
-    const baseHalfWidth_px = this.feetToPixels(4); // 8ft total width = 4ft on each side
-    const legLength_px = this.feetToPixels(4); // 4ft straight legs
+    const creaseRadius_px = this.feetToPixels(RINK_DIMENSIONS.CREASE_RADIUS);
+    const baseHalfWidth_px = this.feetToPixels(
+      RINK_DIMENSIONS.CREASE_BASE_HALF_WIDTH,
+    );
+    const legLength_px = this.feetToPixels(RINK_DIMENSIONS.CREASE_LEG_LENGTH);
 
     let d: string;
 
@@ -1194,7 +1201,7 @@ export class Rink {
       .attr("x2", goalX + depthDirection)
       .attr("y2", topPostY)
       .attr("stroke", this.config.colors.faceoff)
-      .attr("stroke-width", 2);
+      .attr("stroke-width", VISUAL_DEFAULTS.GOAL_STROKE_WIDTH);
 
     // Right post
     group
@@ -1205,7 +1212,7 @@ export class Rink {
       .attr("x2", goalX + depthDirection)
       .attr("y2", bottomPostY)
       .attr("stroke", this.config.colors.faceoff)
-      .attr("stroke-width", 2);
+      .attr("stroke-width", VISUAL_DEFAULTS.GOAL_STROKE_WIDTH);
 
     // Back bar
     group
@@ -1216,7 +1223,7 @@ export class Rink {
       .attr("x2", goalX + depthDirection)
       .attr("y2", bottomPostY)
       .attr("stroke", this.config.colors.faceoff)
-      .attr("stroke-width", 2);
+      .attr("stroke-width", VISUAL_DEFAULTS.GOAL_STROKE_WIDTH);
 
     // Goal posts (circles at goal line)
     group
@@ -1232,7 +1239,7 @@ export class Rink {
       .attr("class", `goal-post-circle ${side} bottom`)
       .attr("cx", goalX)
       .attr("cy", bottomPostY)
-      .attr("r", 1.5)
+      .attr("r", VISUAL_DEFAULTS.GOAL_POST_RADIUS)
       .attr("fill", this.config.colors.faceoff);
   }
 

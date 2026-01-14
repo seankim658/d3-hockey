@@ -35,8 +35,10 @@ export const RINK_DIMENSIONS = {
   FACEOFF_HASH_Y_OFFSET: 2,
   // X-offset from faceoff center to start of hash
   FACEOFF_HASH_X_OFFSET: 1.5,
-  // Goal crease radius
+  // Crease dimensions
   CREASE_RADIUS: 6,
+  CREASE_BASE_HALF_WIDTH: 4,
+  CREASE_LEG_LENGTH: 4,
   // Goal width
   GOAL_WIDTH: 6,
   // Goal depth
@@ -115,6 +117,16 @@ export const LINE_WIDTHS = {
   GOAL_LINE: 0.5, // 2 inches converted to feet
   // Faceoff circle width
   FACEOFF_CIRCLE: 2 / 12, // 2 inches converted to feet
+} as const;
+
+/**
+ * Visual rendering defaults (in pixels, not feet)
+ * These are aesthetic choices, not NHL specifications
+ */
+export const VISUAL_DEFAULTS = {
+  BOARD_STROKE_WIDTH: 2,
+  GOAL_STROKE_WIDTH: 2,
+  GOAL_POST_RADIUS: 1.5,
 } as const;
 
 /**
