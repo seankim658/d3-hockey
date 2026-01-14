@@ -92,6 +92,8 @@ export class EventLayer<TData> extends BaseLayer<
   TData,
   EventLayerConfig<TData>
 > {
+  private dataIndexMap: Map<TData, number> = new Map();
+
   constructor(data: TData[], config: EventLayerConfig<TData>) {
     super(data, config);
   }
@@ -163,6 +165,11 @@ export class EventLayer<TData> extends BaseLayer<
     return this.config.eventType!(d, i);
   }
 
+  private getDataIndex(d: TData): number {
+    const index = this.dataIndexMap.get(d);
+    return index !== undefined ? index : this.data.indexOf(d);
+  }
+
   /**
    * Generate a unique key for an event for D3 data binding.
    * Tries common ID fields, falls back to index-based key.
@@ -219,6 +226,9 @@ export class EventLayer<TData> extends BaseLayer<
     if (!this.group) {
       throw new Error("Layer not initialized. Call initialize() first.");
     }
+
+    this.dataIndexMap.clear();
+    this.data.forEach((d, i) => this.dataIndexMap.set(d, i));
 
     const validEvents = this.data.filter((d, i) => {
       try {
@@ -468,7 +478,7 @@ export class EventLayer<TData> extends BaseLayer<
   ): void {
     selection
       .on("mouseover", (event: MouseEvent, d: TData) => {
-        const index = this.data.indexOf(d);
+        const index = this.getDataIndex(d);
 
         if (this.config.showTooltip) {
           const content = this.config.tooltip(d, index);
@@ -482,7 +492,7 @@ export class EventLayer<TData> extends BaseLayer<
         }
       })
       .on("mouseout", (event: MouseEvent, d: TData) => {
-        const index = this.data.indexOf(d);
+        const index = this.getDataIndex(d);
 
         if (this.config.showTooltip) {
           hideTooltip();
@@ -490,7 +500,7 @@ export class EventLayer<TData> extends BaseLayer<
         this.config.onMouseOut(event, d, index);
       })
       .on("click", (event: MouseEvent, d: TData) => {
-        const index = this.data.indexOf(d);
+        const index = this.getDataIndex(d);
         this.config.onClick(event, d, index);
       });
   }
@@ -517,6 +527,7 @@ export class EventLayer<TData> extends BaseLayer<
    * Cleanup tooltip on destroy
    */
   destroy(): void {
+    this.dataIndexMap.clear();
     super.destroy();
   }
 
