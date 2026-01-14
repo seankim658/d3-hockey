@@ -141,6 +141,22 @@ export abstract class BaseLayer<
   }
 
   /**
+   * Check if customRender is defined and not the detfault empty function.
+   * Subclasses with customRender config should use this to check if custom rendering is needed.
+   */
+  protected hasCustomRender(): boolean {
+    const defaults = this.getDefaults();
+    const config = this.config as Record<string, unknown>;
+    const defaultConfig = defaults as Record<string, unknown>;
+
+    return (
+      "customRender" in config &&
+      config.customRender !== undefined &&
+      config.customRender !== defaultConfig.customRender
+    );
+  }
+
+  /**
    * Get the layer's configuration
    */
   getConfig(): Required<TConfig> {

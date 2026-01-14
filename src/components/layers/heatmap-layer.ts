@@ -606,15 +606,4 @@ export class HeatmapLayer<TData> extends BaseLayer<
   getGridData(): HeatmapGridData | null {
     return this.gridData;
   }
-
-  /**
-   * Check if customRender is defined
-   */
-  private hasCustomRender(): boolean {
-    const defaultRender = this.getDefaults().customRender;
-    return (
-      this.config.customRender !== undefined &&
-      this.config.customRender !== defaultRender
-    );
-  }
 }

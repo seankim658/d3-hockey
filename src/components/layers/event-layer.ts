@@ -209,17 +209,6 @@ export class EventLayer<TData> extends BaseLayer<
   }
 
   /**
-   * Check if customRender is defined and not the default empty function
-   */
-  private hasCustomRender(): boolean {
-    const defaultRender = this.getDefaults().customRender;
-    return (
-      this.config.customRender !== undefined &&
-      this.config.customRender !== defaultRender
-    );
-  }
-
-  /**
    * Render all events on the rink
    */
   render(): void {

@@ -1,73 +1,53 @@
 import type { Accessor } from "../types";
 
-/**
- * Default X coordinate accessor
- */
-export function defaultXAccessor<T>(d: T): number {
+function extractCoordinate<T>(
+  d: T,
+  coord: "x" | "y",
+  nhlCoord: "xCoord" | "yCoord",
+): number {
   if (d && typeof d === "object") {
     const obj = d as Record<string, unknown>;
 
-    // NHL API format: { details: { xCoord: number } }
+    // NHL format: { details: { xCoord: number, yCoord: number } }
     if ("details" in obj && obj.details && typeof obj.details === "object") {
       const details = obj.details as Record<string, unknown>;
-      if ("xCoord" in details && typeof details.xCoord === "number") {
-        return details.xCoord;
+      if (nhlCoord in details && typeof details[nhlCoord] === "number") {
+        return details[nhlCoord] as number;
       }
     }
 
-    // Flat format: { x: number }
-    if ("x" in obj && typeof obj.x === "number") {
-      return obj.x;
+    // Flat format: { x: number, y: number }
+    if (coord in obj && typeof obj[coord] === "number") {
+      return obj[coord] as number;
     }
 
-    // HockeyEvent format: { coordinates: { x: number } }
+    // HockeyEvent format: { coordinates: { x: number, y: number } }
     if (
       "coordinates" in obj &&
       obj.coordinates &&
       typeof obj.coordinates === "object"
     ) {
       const coords = obj.coordinates as Record<string, unknown>;
-      if ("x" in coords && typeof coords.x === "number") {
-        return coords.x;
+      if (coord in coords && typeof coords[coord] === "number") {
+        return coords[coord] as number;
       }
     }
   }
-  throw new Error("Cannot extract x coordinate from data point");
+  throw new Error(`Cannot extract ${coord} coordinate from data point`);
+}
+
+/**
+ * Default X coordinate accessor
+ */
+export function defaultXAccessor<T>(d: T): number {
+  return extractCoordinate(d, "x", "xCoord");
 }
 
 /**
  * Default Y coordinate accessor
  */
 export function defaultYAccessor<T>(d: T): number {
-  if (d && typeof d === "object") {
-    const obj = d as Record<string, unknown>;
-
-    // NHL API format: { details: { yCoord: number } }
-    if ("details" in obj && obj.details && typeof obj.details === "object") {
-      const details = obj.details as Record<string, unknown>;
-      if ("yCoord" in details && typeof details.yCoord === "number") {
-        return details.yCoord;
-      }
-    }
-
-    // Flat format: { y: number }
-    if ("y" in obj && typeof obj.y === "number") {
-      return obj.y;
-    }
-
-    // HockeyEvent format: { coordinates: { y: number } }
-    if (
-      "coordinates" in obj &&
-      obj.coordinates &&
-      typeof obj.coordinates === "object"
-    ) {
-      const coords = obj.coordinates as Record<string, unknown>;
-      if ("y" in coords && typeof coords.y === "number") {
-        return coords.y;
-      }
-    }
-  }
-  throw new Error("Cannot extract y coordinate from data point");
+  return extractCoordinate(d, "y", "yCoord");
 }
 
 /**
