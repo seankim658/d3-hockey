@@ -165,21 +165,17 @@ export function colorByProperty<TData>(
   let colorScale: d3.ScaleSequential<string> | d3.ScaleDiverging<string>;
 
   if (customScale) {
-    colorScale = customScale;
-    if (domain) {
-      colorScale = applyDomainToScale(colorScale, domain);
-    }
+    colorScale = domain
+      ? applyDomainToScale(customScale.copy(), domain)
+      : customScale;
   } else if (scaleName) {
-    colorScale = HOCKEY_COLOR_SCALES[scaleName];
-    if (domain) {
-      colorScale = applyDomainToScale(colorScale.copy(), domain);
-    }
+    colorScale = domain
+      ? applyDomainToScale(HOCKEY_COLOR_SCALES[scaleName].copy(), domain)
+      : HOCKEY_COLOR_SCALES[scaleName];
   } else {
-    // Default to shot quality scale
-    colorScale = HOCKEY_COLOR_SCALES.shotQuality;
-    if (domain) {
-      colorScale = applyDomainToScale(colorScale.copy(), domain);
-    }
+    colorScale = domain
+      ? applyDomainToScale(HOCKEY_COLOR_SCALES.shotQuality.copy(), domain)
+      : HOCKEY_COLOR_SCALES.shotQuality;
   }
 
   return (d: TData, i: number): string => {
@@ -281,13 +277,10 @@ export function colorByCategory<TData>(
   const { colors, scheme, fallback = "#cccccc" } = options;
 
   // Create ordinal scale if using a D3 scheme
-  let ordinalScale: d3.ScaleOrdinal<string, string> | null = null;
-  if (scheme !== undefined) {
-    const schemeColors = D3_COLOR_SCHEMES[scheme];
-    if (schemeColors) {
-      ordinalScale = d3.scaleOrdinal<string, string>(schemeColors);
-    }
-  }
+  const ordinalScale: d3.ScaleOrdinal<string, string> | null =
+    scheme !== undefined && D3_COLOR_SCHEMES[scheme]
+      ? d3.scaleOrdinal<string, string>(D3_COLOR_SCHEMES[scheme])
+      : null;
 
   return (d: TData, i: number): string => {
     const category = extractStringValue(d, property, i);
