@@ -45,6 +45,7 @@ export abstract class BaseLayer<
    */
   protected getDefaults(): Required<TConfig> {
     return {
+      id: "base-layer",
       visible: true,
       opacity: 1,
       className: "layer",
