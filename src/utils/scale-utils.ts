@@ -42,19 +42,17 @@ export function scaleRadiusByProperty<TData>(
 ): Accessor<TData, number> {
   const { min = 3, max = 20, domain, clamp = true } = options;
 
+  const scale = domain
+    ? d3.scaleLinear().domain(domain).range([min, max]).clamp(clamp)
+    : null;
+
   return (d: TData, i: number): number => {
     const value = extractNumericValue(d, property, i);
     if (value === undefined || isNaN(value)) {
       return min;
     }
 
-    // If domain is provided, use it
-    if (domain) {
-      const scale = d3
-        .scaleLinear()
-        .domain(domain)
-        .range([min, max])
-        .clamp(clamp);
+    if (scale) {
       return scale(value);
     }
 
@@ -73,22 +71,24 @@ export function scaleOpacityByProperty<TData>(
 ): Accessor<TData, number> {
   const { min = 0.3, max = 1.0, domain, clamp = true } = options;
 
-  return (d: TData, i: number): number => {
-    const value = extractNumericValue(d, property, i);
-    if (value === undefined || isNaN(value)) {
-      return min;
-    }
+  const clampedMin = Math.max(0, Math.min(1, min));
+  const clampedMax = Math.max(0, Math.min(1, max));
 
-    // Ensure opacity is in valid range
-    const clampedMin = Math.max(0, Math.min(1, min));
-    const clampedMax = Math.max(0, Math.min(1, max));
-
-    if (domain) {
-      const scale = d3
+  const scale = domain
+    ? d3
         .scaleLinear()
         .domain(domain)
         .range([clampedMin, clampedMax])
-        .clamp(clamp);
+        .clamp(clamp)
+    : null;
+
+  return (d: TData, i: number): number => {
+    const value = extractNumericValue(d, property, i);
+    if (value === undefined || isNaN(value)) {
+      return clampedMin;
+    }
+
+    if (scale) {
       return scale(value);
     }
 
@@ -106,18 +106,17 @@ export function scaleByProperty<TData>(
 ): Accessor<TData, number> {
   const { min = 0, max = 1, domain, clamp = true } = options;
 
+  const scale = domain
+    ? d3.scaleLinear().domain(domain).range([min, max]).clamp(clamp)
+    : null;
+
   return (d: TData, i: number): number => {
     const value = extractNumericValue(d, property, i);
     if (value === undefined || isNaN(value)) {
       return min;
     }
 
-    if (domain) {
-      const scale = d3
-        .scaleLinear()
-        .domain(domain)
-        .range([min, max])
-        .clamp(clamp);
+    if (scale) {
       return scale(value);
     }
 
@@ -134,22 +133,20 @@ export function scaleSqrtByProperty<TData>(
 ): Accessor<TData, number> {
   const { min = 3, max = 20, domain, clamp = true } = options;
 
+  const scale = domain
+    ? d3.scaleSqrt(domain).range([min, max]).clamp(clamp)
+    : null;
+
   return (d: TData, i: number): number => {
     const value = extractNumericValue(d, property, i);
     if (value === undefined || isNaN(value)) {
       return min;
     }
 
-    if (domain) {
-      const scale = d3
-        .scaleSqrt()
-        .domain(domain)
-        .range([min, max])
-        .clamp(clamp);
+    if (scale) {
       return scale(value);
     }
 
-    // Simple sqrt scaling
     return min + Math.sqrt(value) * (max - min);
   };
 }
@@ -164,13 +161,13 @@ export function scaleLogByProperty<TData>(
 ): Accessor<TData, number> {
   const { min = 1, max = 10, domain = [1, 100], clamp = true } = options;
 
+  const scale = d3.scaleLog().domain(domain).range([min, max]).clamp(clamp);
+
   return (d: TData, i: number): number => {
     const value = extractNumericValue(d, property, i);
     if (value === undefined || isNaN(value) || value <= 0) {
       return min;
     }
-
-    const scale = d3.scaleLog().domain(domain).range([min, max]).clamp(clamp);
 
     return scale(value);
   };
@@ -190,16 +187,16 @@ export function scaleByThresholds<TData>(
 ): Accessor<TData, number> {
   const { thresholds, outputs, fallback = outputs[0] ?? 0 } = options;
 
+  const scale = d3
+    .scaleThreshold<number, number>()
+    .domain(thresholds)
+    .range(outputs);
+
   return (d: TData, i: number): number => {
     const value = extractNumericValue(d, property, i);
     if (value === undefined || isNaN(value)) {
       return fallback;
     }
-
-    const scale = d3
-      .scaleThreshold<number, number>()
-      .domain(thresholds)
-      .range(outputs);
 
     return scale(value);
   };
